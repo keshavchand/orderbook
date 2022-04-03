@@ -2,7 +2,6 @@ package main
 
 import (
 	"math"
-	"runtime"
 )
 
 type OrderBook struct {
@@ -19,12 +18,23 @@ type OrderLevel struct {
 
 func (level *OrderLevel) OrderCount() int {
 	levelOrderSize := 0
-	for levelOrderSize == 0 {
-		for _, buyOrder := range level.Orders {
-			levelOrderSize += buyOrder.Size
-		}
+	for _, buyOrder := range level.Orders {
+		levelOrderSize += buyOrder.Size
 	}
 	return levelOrderSize
+}
+
+func (level *OrderLevel) MatchOrder(order Order) Order {
+	for idx, thisOrder := range level.Orders {
+		tradeSize := min(order.Size, thisOrder.Size)
+		order.Size -= tradeSize
+		level.Orders[idx].Size -= tradeSize
+		// Write the results to somewhere
+		if order.Size == 0 {
+			return order
+		}
+	}
+	return order
 }
 
 func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
@@ -42,15 +52,16 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 	}
 	level := currentLevel
 	if level.Price < order.Price {
-		for level.GreaterLevel != nil {
-			if level.Price == order.Price {
-				level.Orders = append(level.Orders, order)
-				return nil
-			}
+		// Insert above
+		for level.Price != order.Price && level.GreaterLevel != nil {
 			if level.GreaterLevel.Price > order.Price {
 				break
 			}
 			level = level.GreaterLevel
+		}
+		if level.Price == order.Price {
+			level.Orders = append(level.Orders, order)
+			return nil
 		}
 		newLevel := &OrderLevel{
 			Price:        order.Price,
@@ -62,15 +73,16 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 		level.GreaterLevel = newLevel
 		return newLevel
 	} else if level.Price > order.Price {
-		for level.LesserLevel != nil {
-			if level.Price == order.Price {
-				level.Orders = append(level.Orders, order)
-				return nil
-			}
+		// Insert below
+		for level.Price != order.Price && level.LesserLevel != nil {
 			if level.LesserLevel.Price < order.Price {
 				break
 			}
 			level = level.LesserLevel
+		}
+		if level.Price == order.Price {
+			level.Orders = append(level.Orders, order)
+			return nil
 		}
 		newLevel := &OrderLevel{
 			Price:        order.Price,
@@ -83,6 +95,7 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 		return newLevel
 	}
 
+	level.Orders = append(level.Orders, order)
 	return nil // HOW IT REACHED HERE
 }
 
@@ -144,25 +157,7 @@ func (book *OrderBook) Insert(order Order) {
 				return
 			}
 		}
-		{
-			order := order
-		BuyOrderLoop:
-			for {
-				if order.Type == LIMIT && order.Price < book.BestSell() {
-					break BuyOrderLoop
-				}
-				for idx, sellOrder := range book.SellOrders.Orders {
-					tradeSize := min(order.Size, sellOrder.Size)
-					order.Size -= tradeSize
-					book.SellOrders.Orders[idx].Size -= tradeSize
-					// Write the results to somewhere
-					if order.Size == 0 {
-						break BuyOrderLoop
-					}
-				}
-				book.SellOrders = book.SellOrders.LesserLevel
-			}
-		}
+		order = book.MatchOrderBuy(order)
 		// NO one is selling lower than the least
 		// selling price
 		if order.Type == LIMIT && order.Size > 0 {
@@ -188,31 +183,10 @@ func (book *OrderBook) Insert(order Order) {
 				return
 			}
 		}
-		{
-			order := order
-		SellOrderLoop:
-			for order.Size > 0 {
-				if order.Type == LIMIT && order.Price > book.BestBuy() {
-					break SellOrderLoop
-				}
-				for idx, buyOrder := range book.BuyOrders.Orders {
-					tradeSize := min(order.Size, buyOrder.Size)
-					order.Size -= tradeSize
-					book.BuyOrders.Orders[idx].Size -= tradeSize
-					// Write the results to somewhere
-					if order.Size == 0 {
-						break
-					}
-				}
-				if book.BuyOrders.OrderCount() == 0 {
-					book.BuyOrders = book.BuyOrders.GreaterLevel
-				}
-			}
-		}
+		order = book.MatchOrderSell(order)
 		// NO one is buying at higher price
 		// than the highest
 		if order.Type == LIMIT && order.Size > 0 {
-			runtime.Breakpoint()
 			newLevel := book.SellOrders.Insert(order)
 			if newLevel != nil && newLevel.Price < book.BestSell() {
 				book.SellOrders = newLevel
@@ -222,16 +196,52 @@ func (book *OrderBook) Insert(order Order) {
 	}
 }
 
+func (book *OrderBook) MatchOrderBuy(order Order) Order {
+BuyOrderLoop:
+	for order.Size > 0 {
+		// If the buying price is greater than
+		// the highest selling price then we can't
+		// do anything about it
+		if order.Type == LIMIT && order.Price < book.BestSell() {
+			break BuyOrderLoop
+		}
+		order = book.SellOrders.MatchOrder(order)
+		if book.SellOrders.OrderCount() == 0 {
+			book.SellOrders = book.SellOrders.GreaterLevel
+		}
+	}
+	return order
+}
+
+func (book *OrderBook) MatchOrderSell(order Order) Order {
+SellOrderLoop:
+	for order.Size > 0 {
+		// If the buying price is lesser than
+		// the lowest buying price then we can't
+		// do anything about it
+		if order.Type == LIMIT && order.Price > book.BestBuy() {
+			break SellOrderLoop
+		}
+		order = book.BuyOrders.MatchOrder(order)
+		if book.BuyOrders.OrderCount() == 0 {
+			book.BuyOrders = book.BuyOrders.LesserLevel
+		}
+	}
+	return order
+}
+
 func main() {
 	{
 		someComp := OrderBook{}
+		someComp.Insert(Order{10.0, BUY, LIMIT, 10})
+		someComp.Insert(Order{10.0, BUY, LIMIT, 10})
 		someComp.Insert(Order{10.0, BUY, LIMIT, 10})
 		someComp.Insert(Order{11.0, BUY, LIMIT, 10})
 		someComp.Insert(Order{12.0, BUY, LIMIT, 10})
 		someComp.Insert(Order{9.0, BUY, LIMIT, 10})
 		someComp.Insert(Order{8.0, BUY, LIMIT, 10})
-		// someComp := OrderBook{}
 		someComp.Insert(Order{10.0, SELL, LIMIT, 10})
+		someComp.Insert(Order{10.0, SELL, LIMIT, 15})
 		someComp.Insert(Order{11.0, SELL, LIMIT, 10})
 		someComp.Insert(Order{13.0, SELL, LIMIT, 10})
 		someComp.Insert(Order{9.0, SELL, LIMIT, 10})
