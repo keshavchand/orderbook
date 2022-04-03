@@ -1,24 +1,24 @@
 package main
+
+import "log"
+
 type OrderLevel struct {
 	Price        float32
 	Orders       []Order
 	GreaterLevel *OrderLevel
 	LesserLevel  *OrderLevel
-}
-
-func (level *OrderLevel) OrderCount() int {
-	levelOrderSize := 0
-	for _, buyOrder := range level.Orders {
-		levelOrderSize += buyOrder.Size
-	}
-	return levelOrderSize
+	OrderCount   int
 }
 
 func (level *OrderLevel) MatchOrder(order Order) Order {
 	for idx, thisOrder := range level.Orders {
 		tradeSize := min(order.Size, thisOrder.Size)
+		if tradeSize != 0 {
+			log.Printf("%d traded at %f\n", tradeSize, order.Price)
+		}
 		order.Size -= tradeSize
 		level.Orders[idx].Size -= tradeSize
+		level.OrderCount -= tradeSize
 		// Write the results to somewhere
 		if order.Size == 0 {
 			return order
@@ -36,6 +36,7 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 			Orders:       make([]Order, 0, 10),
 			GreaterLevel: nil,
 			LesserLevel:  nil,
+			OrderCount:   order.Size,
 		}
 		newLevel.Orders = append(newLevel.Orders, order)
 		return newLevel
@@ -51,6 +52,7 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 		}
 		if level.Price == order.Price {
 			level.Orders = append(level.Orders, order)
+			level.OrderCount += order.Size
 			return nil
 		}
 		newLevel := &OrderLevel{
@@ -58,6 +60,7 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 			Orders:       make([]Order, 0, 10),
 			GreaterLevel: level.GreaterLevel,
 			LesserLevel:  level,
+			OrderCount:   order.Size,
 		}
 		newLevel.Orders = append(newLevel.Orders, order)
 		level.GreaterLevel = newLevel
@@ -72,6 +75,7 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 		}
 		if level.Price == order.Price {
 			level.Orders = append(level.Orders, order)
+			level.OrderCount += order.Size
 			return nil
 		}
 		newLevel := &OrderLevel{
@@ -79,6 +83,7 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 			Orders:       make([]Order, 0, 100),
 			GreaterLevel: level,
 			LesserLevel:  level.LesserLevel,
+			OrderCount:   order.Size,
 		}
 		newLevel.Orders = append(newLevel.Orders, order)
 		level.LesserLevel = newLevel
@@ -86,5 +91,6 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 	}
 
 	level.Orders = append(level.Orders, order)
+	level.OrderCount += order.Size
 	return nil
 }

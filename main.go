@@ -116,7 +116,7 @@ BuyOrderLoop:
 			break BuyOrderLoop
 		}
 		order = book.SellOrders.MatchOrder(order)
-		if book.SellOrders.OrderCount() == 0 {
+		if book.SellOrders.OrderCount == 0 {
 			book.SellOrders = book.SellOrders.GreaterLevel
 		}
 	}
@@ -133,7 +133,7 @@ SellOrderLoop:
 			break SellOrderLoop
 		}
 		order = book.BuyOrders.MatchOrder(order)
-		if book.BuyOrders.OrderCount() == 0 {
+		if book.BuyOrders.OrderCount == 0 {
 			book.BuyOrders = book.BuyOrders.LesserLevel
 		}
 	}
