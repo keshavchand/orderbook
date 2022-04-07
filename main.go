@@ -1,12 +1,15 @@
 package main
 
 import (
+	"io"
 	"math"
+	_ "net/http/pprof"
 )
 
 type OrderBook struct {
 	BuyOrders  *OrderLevel
 	SellOrders *OrderLevel
+	OutFile    io.Writer
 }
 
 type OrderSide int
@@ -115,7 +118,7 @@ BuyOrderLoop:
 		if order.Type == LIMIT && order.Price < book.BestSell() {
 			break BuyOrderLoop
 		}
-		order = book.SellOrders.MatchOrder(order)
+		order = book.SellOrders.MatchOrder(order, book.OutFile)
 		if book.SellOrders.OrderCount == 0 {
 			book.SellOrders = book.SellOrders.GreaterLevel
 		}
@@ -132,7 +135,7 @@ SellOrderLoop:
 		if order.Type == LIMIT && order.Price > book.BestBuy() {
 			break SellOrderLoop
 		}
-		order = book.BuyOrders.MatchOrder(order)
+		order = book.BuyOrders.MatchOrder(order, book.OutFile)
 		if book.BuyOrders.OrderCount == 0 {
 			book.BuyOrders = book.BuyOrders.LesserLevel
 		}
@@ -140,21 +143,26 @@ SellOrderLoop:
 	return order
 }
 
+type WriterStub struct{}
+
+func (w WriterStub) Write(b []byte) (int, error) {
+	return len(b), nil
+}
+
 func main() {
-	{
-		someComp := OrderBook{}
-		someComp.Insert(Order{10.0, BUY, LIMIT, 10})
-		someComp.Insert(Order{10.0, BUY, LIMIT, 10})
-		someComp.Insert(Order{10.0, BUY, LIMIT, 10})
-		someComp.Insert(Order{11.0, BUY, LIMIT, 10})
-		someComp.Insert(Order{12.0, BUY, LIMIT, 10})
-		someComp.Insert(Order{9.0, BUY, LIMIT, 10})
-		someComp.Insert(Order{8.0, BUY, LIMIT, 10})
-		someComp.Insert(Order{10.0, SELL, LIMIT, 10})
-		someComp.Insert(Order{10.0, SELL, LIMIT, 15})
-		someComp.Insert(Order{11.0, SELL, LIMIT, 10})
-		someComp.Insert(Order{13.0, SELL, LIMIT, 10})
-		someComp.Insert(Order{9.0, SELL, LIMIT, 10})
-		someComp.Insert(Order{8.0, SELL, LIMIT, 10})
-	}
+	someComp := OrderBook{}
+	someComp.OutFile = WriterStub{}
+	someComp.Insert(Order{10.0, BUY, LIMIT, 10})
+	someComp.Insert(Order{10.0, BUY, LIMIT, 10})
+	someComp.Insert(Order{10.0, BUY, LIMIT, 10})
+	someComp.Insert(Order{11.0, BUY, LIMIT, 10})
+	someComp.Insert(Order{12.0, BUY, LIMIT, 10})
+	someComp.Insert(Order{9.0, BUY, LIMIT, 10})
+	someComp.Insert(Order{8.0, BUY, LIMIT, 10})
+	someComp.Insert(Order{10.0, SELL, LIMIT, 10})
+	someComp.Insert(Order{10.0, SELL, LIMIT, 15})
+	someComp.Insert(Order{11.0, SELL, LIMIT, 10})
+	someComp.Insert(Order{13.0, SELL, LIMIT, 10})
+	someComp.Insert(Order{9.0, SELL, LIMIT, 10})
+	someComp.Insert(Order{8.0, SELL, LIMIT, 10})
 }

@@ -1,6 +1,9 @@
 package main
 
-import "log"
+import (
+	"fmt"
+	"io"
+)
 
 type OrderLevel struct {
 	Price        float32
@@ -10,11 +13,11 @@ type OrderLevel struct {
 	OrderCount   int
 }
 
-func (level *OrderLevel) MatchOrder(order Order) Order {
+func (level *OrderLevel) MatchOrder(order Order, outFile io.Writer) Order {
 	for idx, thisOrder := range level.Orders {
 		tradeSize := min(order.Size, thisOrder.Size)
 		if tradeSize != 0 {
-			log.Printf("%d traded at %f\n", tradeSize, order.Price)
+      outFile.Write([]byte(fmt.Sprintf("%d traded at %f\n", tradeSize, order.Price)))
 		}
 		order.Size -= tradeSize
 		level.Orders[idx].Size -= tradeSize
