@@ -3,7 +3,6 @@ package main
 import (
 	"io"
 	"math"
-	_ "net/http/pprof"
 )
 
 type OrderSide int
@@ -148,6 +147,7 @@ BuyOrderLoop:
 			break BuyOrderLoop
 		}
 		order = book.SellOrders.Match(order, book.OutFile)
+
 		if book.SellOrders.OrderCount == 0 {
 			book.SellOrders = book.SellOrders.GreaterLevel
 		}
@@ -172,41 +172,5 @@ SellOrderLoop:
 	return order
 }
 
-type WriterStub struct{}
 
-func (w WriterStub) Write(b []byte) (int, error) {
-	return len(b), nil
-}
-
-func main() {
-	someComp := OrderBook{}
-	someComp.IdToPrice = make(map[int]PriceSide)
-	someComp.OutFile = WriterStub{}
-	i := 0
-	someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
-	i++
-	someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
-	i++
-	someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
-	i++
-	someComp.Insert(Order{11.0, BUY, LIMIT, 10, i})
-	i++
-	someComp.Insert(Order{12.0, BUY, LIMIT, 10, i})
-	i++
-	someComp.Insert(Order{9.0, BUY, LIMIT, 10, i})
-	i++
-	someComp.Insert(Order{8.0, BUY, LIMIT, 10, i})
-	i++
-	someComp.Insert(Order{10.0, SELL, LIMIT, 10, i})
-	i++
-	someComp.Insert(Order{10.0, SELL, LIMIT, 15, i})
-	i++
-	someComp.Insert(Order{11.0, SELL, LIMIT, 10, i})
-	i++
-	someComp.Insert(Order{13.0, SELL, LIMIT, 10, i})
-	i++
-	someComp.Insert(Order{9.0, SELL, LIMIT, 10, i})
-	i++
-	someComp.Insert(Order{8.0, SELL, LIMIT, 10, i})
-	i++
-}
+func main() {}
