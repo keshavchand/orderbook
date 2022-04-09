@@ -13,6 +13,33 @@ type OrderLevel struct {
 	OrderCount   int
 }
 
+
+func (level *OrderLevel) Delete(Id int, price float32) bool {
+  for level.Price < price {
+    newLevel := level.GreaterLevel
+    if newLevel.Price > price {
+      return false
+    }
+    level = newLevel
+  }
+  for level.Price > price {
+    newLevel := level.LesserLevel
+    if newLevel.Price < price {
+      return false
+    }
+    level = newLevel
+  }
+
+  for idx, order := range level.Orders {
+    if order.Id == Id {
+      level.OrderCount -= level.Orders[idx].Size
+      level.Orders[idx].Size = 0;
+      return true
+    }
+  }
+  return false
+}
+
 func (level *OrderLevel) MatchOrder(order Order, outFile io.Writer) Order {
 	for idx, thisOrder := range level.Orders {
 		tradeSize := min(order.Size, thisOrder.Size)
@@ -56,7 +83,7 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 		if level.Price == order.Price {
 			level.Orders = append(level.Orders, order)
 			level.OrderCount += order.Size
-			return nil
+			return level
 		}
 		newLevel := &OrderLevel{
 			Price:        order.Price,
@@ -79,7 +106,7 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 		if level.Price == order.Price {
 			level.Orders = append(level.Orders, order)
 			level.OrderCount += order.Size
-			return nil
+			return level
 		}
 		newLevel := &OrderLevel{
 			Price:        order.Price,
