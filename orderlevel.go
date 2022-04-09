@@ -40,7 +40,7 @@ func (level *OrderLevel) Delete(Id int, price float32) bool {
   return false
 }
 
-func (level *OrderLevel) MatchOrder(order Order, outFile io.Writer) Order {
+func (level *OrderLevel) Match(order Order, outFile io.Writer) Order {
 	for idx, thisOrder := range level.Orders {
 		tradeSize := min(order.Size, thisOrder.Size)
 		if tradeSize != 0 {

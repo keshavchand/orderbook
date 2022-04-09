@@ -147,7 +147,7 @@ BuyOrderLoop:
 		if order.Type == LIMIT && order.Price < book.BestSell() {
 			break BuyOrderLoop
 		}
-		order = book.SellOrders.MatchOrder(order, book.OutFile)
+		order = book.SellOrders.Match(order, book.OutFile)
 		if book.SellOrders.OrderCount == 0 {
 			book.SellOrders = book.SellOrders.GreaterLevel
 		}
@@ -164,7 +164,7 @@ SellOrderLoop:
 		if order.Type == LIMIT && order.Price > book.BestBuy() {
 			break SellOrderLoop
 		}
-		order = book.BuyOrders.MatchOrder(order, book.OutFile)
+		order = book.BuyOrders.Match(order, book.OutFile)
 		if book.BuyOrders.OrderCount == 0 {
 			book.BuyOrders = book.BuyOrders.LesserLevel
 		}
