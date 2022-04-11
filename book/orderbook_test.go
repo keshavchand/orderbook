@@ -1,4 +1,4 @@
-package main
+package book
 
 import "testing"
 
@@ -251,10 +251,31 @@ func Test_OrderDelete_AfterMatching(t *testing.T){
   SameOrderBook(t, book1, book2)
 }
 
+func Test_BenchMark(t *testing.T){
+	someComp := OrderBook{}
+	someComp.OutFile = WriterStub{}
+	someComp.IdToPrice = make(map[int]PriceSide)
+
+  i := 0
+  someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
+  someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
+  someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
+  someComp.Insert(Order{11.0, BUY, LIMIT, 10, i}); i++
+  someComp.Insert(Order{12.0, BUY, LIMIT, 10, i}); i++
+  someComp.Insert(Order{9.0, BUY, LIMIT, 10, i}); i++
+  someComp.Insert(Order{8.0, BUY, LIMIT, 10, i}); i++
+  someComp.Insert(Order{10.0, SELL, LIMIT, 10, i}); i++
+  someComp.Insert(Order{10.0, SELL, LIMIT, 15, i}); i++
+  someComp.Insert(Order{11.0, SELL, LIMIT, 10, i}); i++
+  someComp.Insert(Order{13.0, SELL, LIMIT, 10, i}); i++
+  someComp.Insert(Order{9.0, SELL, LIMIT, 10, i}); i++
+  someComp.Insert(Order{8.0, SELL, LIMIT, 10, i}); i++
+}
 func Benchmark_OrderWriting(b *testing.B) {
 	someComp := OrderBook{}
 	someComp.OutFile = WriterStub{}
 	someComp.IdToPrice = make(map[int]PriceSide)
+
 	for n := 0; n < b.N; n++ {
 		i := 0
 		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++

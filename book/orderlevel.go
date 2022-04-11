@@ -1,4 +1,4 @@
-package main
+package book
 
 import (
 	"fmt"
@@ -122,5 +122,5 @@ func (currentLevel *OrderLevel) Insert(order Order) *OrderLevel {
 
 	level.Orders = append(level.Orders, order)
 	level.OrderCount += order.Size
-	return nil
+	return level
 }
