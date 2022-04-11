@@ -50,7 +50,7 @@ func SameOrderBook(t *testing.T, book1, book2 OrderBook) {
 				if order.Size == 0 {
 					continue
 				}
-				lvl1_orders = append(lvl2_orders, order)
+				lvl2_orders = append(lvl2_orders, order)
 			}
 
 			if len(lvl1_orders) != len(lvl2_orders) {
@@ -216,37 +216,59 @@ func Test_OrderBook_MatchOrder_Buy(t *testing.T) {
   SameOrderBook(t, book1, book2)
 }
 
+func Test_OrderDelete(t *testing.T){
+	book1 := OrderBook{}
+	book1.OutFile = WriterStub{}
+	book1.IdToPrice = make(map[int]PriceSide)
+	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
+	book1.Insert(Order{10.0, BUY, LIMIT, 10, 1})
+	book1.Insert(Order{10.0, BUY, LIMIT, 10, 2})
+  book1.Delete(1)
+
+	book2 := OrderBook{}
+	book2.OutFile = WriterStub{}
+	book2.IdToPrice = make(map[int]PriceSide)
+	book2.Insert(Order{20.0, BUY, LIMIT, 10, 0})
+	book2.Insert(Order{10.0, BUY, LIMIT, 10, 2})
+
+  SameOrderBook(t, book1, book2)
+}
+
+func Test_OrderDelete_AfterMatching(t *testing.T){
+	book1 := OrderBook{}
+	book1.OutFile = WriterStub{}
+	book1.IdToPrice = make(map[int]PriceSide)
+	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
+	book1.Insert(Order{10.0, BUY, LIMIT, 10, 1})
+	book1.Insert(Order{5.0, SELL, LIMIT, 10, 2})
+  book1.Delete(0)
+
+	book2 := OrderBook{}
+	book2.OutFile = WriterStub{}
+	book2.IdToPrice = make(map[int]PriceSide)
+	book2.Insert(Order{10.0, BUY, LIMIT, 10, 1})
+
+  SameOrderBook(t, book1, book2)
+}
+
 func Benchmark_OrderWriting(b *testing.B) {
 	someComp := OrderBook{}
 	someComp.OutFile = WriterStub{}
 	someComp.IdToPrice = make(map[int]PriceSide)
 	for n := 0; n < b.N; n++ {
 		i := 0
-		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
-		i++
-		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
-		i++
-		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
-		i++
-		someComp.Insert(Order{11.0, BUY, LIMIT, 10, i})
-		i++
-		someComp.Insert(Order{12.0, BUY, LIMIT, 10, i})
-		i++
-		someComp.Insert(Order{9.0, BUY, LIMIT, 10, i})
-		i++
-		someComp.Insert(Order{8.0, BUY, LIMIT, 10, i})
-		i++
-		someComp.Insert(Order{10.0, SELL, LIMIT, 10, i})
-		i++
-		someComp.Insert(Order{10.0, SELL, LIMIT, 15, i})
-		i++
-		someComp.Insert(Order{11.0, SELL, LIMIT, 10, i})
-		i++
-		someComp.Insert(Order{13.0, SELL, LIMIT, 10, i})
-		i++
-		someComp.Insert(Order{9.0, SELL, LIMIT, 10, i})
-		i++
-		someComp.Insert(Order{8.0, SELL, LIMIT, 10, i})
-		i++
+		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
+		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
+		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
+		someComp.Insert(Order{11.0, BUY, LIMIT, 10, i}); i++
+		someComp.Insert(Order{12.0, BUY, LIMIT, 10, i}); i++
+		someComp.Insert(Order{9.0, BUY, LIMIT, 10, i}); i++
+		someComp.Insert(Order{8.0, BUY, LIMIT, 10, i}); i++
+		someComp.Insert(Order{10.0, SELL, LIMIT, 10, i}); i++
+		someComp.Insert(Order{10.0, SELL, LIMIT, 15, i}); i++
+		someComp.Insert(Order{11.0, SELL, LIMIT, 10, i}); i++
+		someComp.Insert(Order{13.0, SELL, LIMIT, 10, i}); i++
+		someComp.Insert(Order{9.0, SELL, LIMIT, 10, i}); i++
+		someComp.Insert(Order{8.0, SELL, LIMIT, 10, i}); i++
 	}
 }

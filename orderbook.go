@@ -20,8 +20,9 @@ const (
 )
 
 type PriceSide struct {
-	Price float32
+  Price float32
 	Side  OrderSide
+  Offset  int
 }
 
 type OrderBook struct {
@@ -75,7 +76,7 @@ func (book *OrderBook) Insert(order Order) {
           OrderCount: order.Size,
 				}
 				level.Orders = append(level.Orders, order)
-				book.IdToPrice[order.Id] = PriceSide{order.Price, BUY}
+				book.IdToPrice[order.Id] = PriceSide{order.Price, BUY, len(level.Orders) - 1}
 				book.BuyOrders = &level
 				return
 			}
@@ -85,7 +86,7 @@ func (book *OrderBook) Insert(order Order) {
 		// selling price
 		if order.Type == LIMIT && order.Size > 0 {
 			newLevel := book.BuyOrders.Insert(order)
-			book.IdToPrice[order.Id] = PriceSide{order.Price, BUY}
+      book.IdToPrice[order.Id] = PriceSide{order.Price, BUY, len(newLevel.Orders) - 1}
 			if newLevel != nil && newLevel.Price > book.BestBuy() {
 				book.BuyOrders = newLevel
 			}
@@ -104,7 +105,7 @@ func (book *OrderBook) Insert(order Order) {
           OrderCount: order.Size,
 				}
 				level.Orders = append(level.Orders, order)
-				book.IdToPrice[order.Id] = PriceSide{order.Price, SELL}
+				book.IdToPrice[order.Id] = PriceSide{order.Price, SELL, len(level.Orders) - 1}
 				book.SellOrders = &level
 				return
 			}
@@ -114,7 +115,7 @@ func (book *OrderBook) Insert(order Order) {
 		// than the highest
 		if order.Type == LIMIT && order.Size > 0 {
 			newLevel := book.SellOrders.Insert(order)
-			book.IdToPrice[order.Id] = PriceSide{order.Price, SELL}
+			book.IdToPrice[order.Id] = PriceSide{order.Price, SELL, len(newLevel.Orders) - 1}
 			if newLevel != nil && newLevel.Price < book.BestSell() {
 				book.SellOrders = newLevel
 			}
@@ -130,9 +131,9 @@ func (book *OrderBook) Delete(id int) bool{
   }
   switch price.Side {
     case BUY:
-      return book.BuyOrders.Delete(id, price.Price)
+      return book.BuyOrders.Delete(id, price.Price, price.Offset)
     case SELL:
-      return book.SellOrders.Delete(id, price.Price)
+      return book.SellOrders.Delete(id, price.Price, price.Offset)
   }
   return false
 }

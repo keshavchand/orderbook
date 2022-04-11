@@ -14,7 +14,7 @@ type OrderLevel struct {
 }
 
 
-func (level *OrderLevel) Delete(Id int, price float32) bool {
+func (level *OrderLevel) Delete(Id int, price float32, offset int) bool {
   for level.Price < price {
     newLevel := level.GreaterLevel
     if newLevel.Price > price {
