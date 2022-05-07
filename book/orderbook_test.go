@@ -1,11 +1,59 @@
 package book
 
-import "testing"
+import (
+	"fmt"
+	"sync/atomic"
+	"testing"
+)
 
 type WriterStub struct{}
 
 func (w WriterStub) Write(b []byte) (int, error) {
 	return len(b), nil
+}
+
+func CreateOrderBook(book OrderBook) {
+	fmt.Println(`
+	book := OrderBook{}
+	book.OutFile = WriterStub{}
+	book.IdToPrice = make(map[int]PriceSide)
+  `)
+
+	buySide := book.BuyOrders
+	for buySide != nil {
+		for _, order := range buySide.Orders {
+			t := "LIMIT"
+			if order.Type == MARKET {
+				t = "MARKET"
+			}
+
+			s := "BUY"
+			if order.Side == SELL {
+				s = "SELL"
+			}
+			fmt.Printf("book.Insert(OrderBook{%f, %s, %s, %d, %d})\n",
+				order.Price, s, t, order.Size, order.Id)
+		}
+		buySide = buySide.LesserLevel
+	}
+
+	sellSide := book.SellOrders
+	for sellSide != nil {
+		for _, order := range sellSide.Orders {
+			t := "LIMIT"
+			if order.Type == MARKET {
+				t = "MARKET"
+			}
+
+			s := "BUY"
+			if order.Side == SELL {
+				s = "SELL"
+			}
+			fmt.Printf("book.Insert(OrderBook{%f, %s, %s, %d, %d})\n",
+				order.Price, s, t, order.Size, order.Id)
+		}
+		sellSide = sellSide.GreaterLevel
+	}
 }
 
 func SameOrderBook(t *testing.T, book1, book2 OrderBook) {
@@ -23,11 +71,11 @@ func SameOrderBook(t *testing.T, book1, book2 OrderBook) {
 	book1_lvl := book1.BuyOrders
 	book2_lvl := book2.BuyOrders
 	if book1_lvl != nil && book2_lvl != nil {
-		for !(book1_lvl == nil && book2_lvl == nil){
-      if (book1_lvl == nil && book2_lvl != nil) ||
-      (book1_lvl != nil && book2_lvl == nil){
-        t.Errorf("Book level Mismatch %v %v", book1_lvl, book2_lvl)
-      }
+		for !(book1_lvl == nil && book2_lvl == nil) {
+			if (book1_lvl == nil && book2_lvl != nil) ||
+				(book1_lvl != nil && book2_lvl == nil) {
+				t.Errorf("Book level Mismatch %v %v", book1_lvl, book2_lvl)
+			}
 			for book1_lvl.OrderCount == 0 {
 				book1_lvl = book1_lvl.LesserLevel
 			}
@@ -55,37 +103,37 @@ func SameOrderBook(t *testing.T, book1, book2 OrderBook) {
 
 			if len(lvl1_orders) != len(lvl2_orders) {
 				t.Errorf("Orders level Size different %d vs %d", len(lvl1_orders), len(lvl2_orders))
-        return
+				return
 			}
 
-      for i := 0; i < len(lvl1_orders); i++ {
-        o1 := lvl1_orders[i]
-        o2 := lvl2_orders[i]
-        if !SameOrders(t, o1, o2) {
-          return
-        }
-      }
-      book1_lvl = book1_lvl.LesserLevel
-      book2_lvl = book2_lvl.LesserLevel
+			for i := 0; i < len(lvl1_orders); i++ {
+				o1 := lvl1_orders[i]
+				o2 := lvl2_orders[i]
+				if !SameOrders(t, o1, o2) {
+					return
+				}
+			}
+			book1_lvl = book1_lvl.LesserLevel
+			book2_lvl = book2_lvl.LesserLevel
 		}
 	}
 	book1_lvl = book1.SellOrders
 	book2_lvl = book2.SellOrders
 	if book1_lvl != nil && book2_lvl != nil {
-		for !(book1_lvl == nil && book2_lvl == nil){
-      if (book1_lvl == nil && book2_lvl != nil) ||
-      (book1_lvl != nil && book2_lvl == nil){
-        t.Errorf("Book level Mismatch %v %v", book1_lvl, book2_lvl)
-      }
-      for book1_lvl.OrderCount == 0 {
-        book1_lvl = book1_lvl.GreaterLevel
-      }
+		for !(book1_lvl == nil && book2_lvl == nil) {
+			if (book1_lvl == nil && book2_lvl != nil) ||
+				(book1_lvl != nil && book2_lvl == nil) {
+				t.Errorf("Book level Mismatch %v %v", book1_lvl, book2_lvl)
+			}
+			for book1_lvl.OrderCount == 0 {
+				book1_lvl = book1_lvl.GreaterLevel
+			}
 			for book2_lvl.OrderCount == 0 {
 				book2_lvl = book2_lvl.GreaterLevel
 			}
 			if book1_lvl.Price != book2_lvl.Price {
 				t.Errorf(`Books probably misses levels book1 %f vs book2 %f`, book1_lvl.Price, book2_lvl.Price)
-        return
+				return
 			}
 			lvl1_orders := make([]Order, 0, book1_lvl.OrderCount)
 			lvl2_orders := make([]Order, 0, book2_lvl.OrderCount)
@@ -105,45 +153,45 @@ func SameOrderBook(t *testing.T, book1, book2 OrderBook) {
 
 			if len(lvl1_orders) != len(lvl2_orders) {
 				t.Errorf("Orders level Size different %d vs %d", len(lvl1_orders), len(lvl2_orders))
-        return
+				return
 			}
 
-      for i := 0; i < len(lvl1_orders); i++ {
-        o1 := lvl1_orders[i]
-        o2 := lvl2_orders[i]
-        if !SameOrders(t, o1, o2) {
-          return
-        }
-      }
-      book1_lvl = book1_lvl.GreaterLevel
-      book2_lvl = book2_lvl.GreaterLevel
+			for i := 0; i < len(lvl1_orders); i++ {
+				o1 := lvl1_orders[i]
+				o2 := lvl2_orders[i]
+				if !SameOrders(t, o1, o2) {
+					return
+				}
+			}
+			book1_lvl = book1_lvl.GreaterLevel
+			book2_lvl = book2_lvl.GreaterLevel
 		}
 	}
 }
 
-func SameOrders(t *testing.T, o1, o2 Order) bool{
-  if o1.Price != o2.Price {
-    t.Errorf("Order Prices different")
-    return false
-  }
-  if o1.Side != o2.Side {
-    t.Errorf("Order Sides different")
-    return false
-  }
-  if o1.Type != o2.Type {
-    t.Errorf("Order Types different")
-    return false
-  }
-  if o1.Size != o2.Size {
-    t.Errorf("Order Sizes different")
-    return false
-  }
-  if o1.Id != o2.Id {
-    t.Errorf("Order Ids different")
-    return false
-  }
+func SameOrders(t *testing.T, o1, o2 Order) bool {
+	if o1.Price != o2.Price {
+		t.Errorf("Order Prices different")
+		return false
+	}
+	if o1.Side != o2.Side {
+		t.Errorf("Order Sides different")
+		return false
+	}
+	if o1.Type != o2.Type {
+		t.Errorf("Order Types different")
+		return false
+	}
+	if o1.Size != o2.Size {
+		t.Errorf("Order Sizes different")
+		return false
+	}
+	if o1.Id != o2.Id {
+		t.Errorf("Order Ids different")
+		return false
+	}
 
-  return true
+	return true
 }
 
 func Test_OrderBook_Add_Buy(t *testing.T) {
@@ -197,7 +245,7 @@ func Test_OrderBook_MatchOrder_Sell(t *testing.T) {
 	book2.OutFile = WriterStub{}
 	book2.IdToPrice = make(map[int]PriceSide)
 	book2.Insert(Order{15.0, SELL, LIMIT, 5, 1})
-  SameOrderBook(t, book1, book2)
+	SameOrderBook(t, book1, book2)
 }
 
 func Test_OrderBook_MatchOrder_Buy(t *testing.T) {
@@ -213,17 +261,17 @@ func Test_OrderBook_MatchOrder_Buy(t *testing.T) {
 	book2.IdToPrice = make(map[int]PriceSide)
 	book2.Insert(Order{10.0, BUY, LIMIT, 5, 1})
 
-  SameOrderBook(t, book1, book2)
+	SameOrderBook(t, book1, book2)
 }
 
-func Test_OrderDelete(t *testing.T){
+func Test_OrderDelete(t *testing.T) {
 	book1 := OrderBook{}
 	book1.OutFile = WriterStub{}
 	book1.IdToPrice = make(map[int]PriceSide)
 	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 1})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 2})
-  book1.Delete(1)
+	book1.Delete(1)
 
 	book2 := OrderBook{}
 	book2.OutFile = WriterStub{}
@@ -231,65 +279,107 @@ func Test_OrderDelete(t *testing.T){
 	book2.Insert(Order{20.0, BUY, LIMIT, 10, 0})
 	book2.Insert(Order{10.0, BUY, LIMIT, 10, 2})
 
-  SameOrderBook(t, book1, book2)
+	SameOrderBook(t, book1, book2)
 }
 
-func Test_OrderDelete_AfterMatching(t *testing.T){
+func Test_OrderDelete_AfterMatching(t *testing.T) {
 	book1 := OrderBook{}
 	book1.OutFile = WriterStub{}
 	book1.IdToPrice = make(map[int]PriceSide)
 	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 1})
 	book1.Insert(Order{5.0, SELL, LIMIT, 10, 2})
-  book1.Delete(0)
+	book1.Delete(0)
 
 	book2 := OrderBook{}
 	book2.OutFile = WriterStub{}
 	book2.IdToPrice = make(map[int]PriceSide)
 	book2.Insert(Order{10.0, BUY, LIMIT, 10, 1})
 
-  SameOrderBook(t, book1, book2)
+	SameOrderBook(t, book1, book2)
 }
 
-func Test_BenchMark(t *testing.T){
+func FuzzOrderBook(f *testing.F) {
 	someComp := OrderBook{}
 	someComp.OutFile = WriterStub{}
 	someComp.IdToPrice = make(map[int]PriceSide)
 
-  i := 0
-  someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
-  someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
-  someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
-  someComp.Insert(Order{11.0, BUY, LIMIT, 10, i}); i++
-  someComp.Insert(Order{12.0, BUY, LIMIT, 10, i}); i++
-  someComp.Insert(Order{9.0, BUY, LIMIT, 10, i}); i++
-  someComp.Insert(Order{8.0, BUY, LIMIT, 10, i}); i++
-  someComp.Insert(Order{10.0, SELL, LIMIT, 10, i}); i++
-  someComp.Insert(Order{10.0, SELL, LIMIT, 15, i}); i++
-  someComp.Insert(Order{11.0, SELL, LIMIT, 10, i}); i++
-  someComp.Insert(Order{13.0, SELL, LIMIT, 10, i}); i++
-  someComp.Insert(Order{9.0, SELL, LIMIT, 10, i}); i++
-  someComp.Insert(Order{8.0, SELL, LIMIT, 10, i}); i++
+	f.Add(float32(10.0), uint(10))
+	var i int32 = 0
+	f.Fuzz(func(t *testing.T, price float32, size uint) {
+		someComp.Insert(Order{price, BUY, LIMIT, int(size), int(i)})
+		atomic.AddInt32(&i, 1)
+	})
+}
+
+func Test_BenchMark(t *testing.T) {
+	someComp := OrderBook{}
+	someComp.OutFile = WriterStub{}
+	someComp.IdToPrice = make(map[int]PriceSide)
+
+	i := 0
+	for n := 0; n < 2; n++ {
+		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{11.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{12.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{9.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{8.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{10.0, SELL, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{10.0, SELL, LIMIT, 15, i})
+		i++
+		someComp.Insert(Order{11.0, SELL, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{13.0, SELL, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{9.0, SELL, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{8.0, SELL, LIMIT, 10, i})
+		i++
+	}
+	CreateOrderBook(someComp)
 }
 func Benchmark_OrderWriting(b *testing.B) {
 	someComp := OrderBook{}
 	someComp.OutFile = WriterStub{}
 	someComp.IdToPrice = make(map[int]PriceSide)
 
+	i := 0
 	for n := 0; n < b.N; n++ {
-		i := 0
-		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
-		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
-		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i}); i++
-		someComp.Insert(Order{11.0, BUY, LIMIT, 10, i}); i++
-		someComp.Insert(Order{12.0, BUY, LIMIT, 10, i}); i++
-		someComp.Insert(Order{9.0, BUY, LIMIT, 10, i}); i++
-		someComp.Insert(Order{8.0, BUY, LIMIT, 10, i}); i++
-		someComp.Insert(Order{10.0, SELL, LIMIT, 10, i}); i++
-		someComp.Insert(Order{10.0, SELL, LIMIT, 15, i}); i++
-		someComp.Insert(Order{11.0, SELL, LIMIT, 10, i}); i++
-		someComp.Insert(Order{13.0, SELL, LIMIT, 10, i}); i++
-		someComp.Insert(Order{9.0, SELL, LIMIT, 10, i}); i++
-		someComp.Insert(Order{8.0, SELL, LIMIT, 10, i}); i++
+		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{11.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{12.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{9.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{8.0, BUY, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{10.0, SELL, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{10.0, SELL, LIMIT, 15, i})
+		i++
+		someComp.Insert(Order{11.0, SELL, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{13.0, SELL, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{9.0, SELL, LIMIT, 10, i})
+		i++
+		someComp.Insert(Order{8.0, SELL, LIMIT, 10, i})
+		i++
 	}
 }

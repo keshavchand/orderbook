@@ -62,65 +62,63 @@ func min(a, b int) int {
 	return b
 }
 
+func (book *OrderBook) insertBuy(order Order) {
+	if book.SellOrders == nil {
+		if order.Type == MARKET {
+			return // TODO: Some sort of error ??
+		}
+		if book.BuyOrders == nil {
+			level := NewLevel(order)
+			book.IdToPrice[order.Id] = PriceSide{order.Price, BUY, len(level.Orders) - 1}
+			book.BuyOrders = level
+			return
+		}
+	}
+	order = book.matchOrderBuy(order)
+	// NO one is selling lower than the least
+	// selling price
+	if order.Type == LIMIT && order.Size > 0 {
+		newLevel := book.BuyOrders.Insert(order)
+		book.IdToPrice[order.Id] = PriceSide{order.Price, BUY, len(newLevel.Orders) - 1}
+		if newLevel != nil && newLevel.Price > book.bestBuy() {
+			book.BuyOrders = newLevel
+		}
+		return
+	}
+}
+
+func (book *OrderBook) insertSell(order Order) {
+	// IF there are no buy orders
+	if book.BuyOrders == nil { // unlikely
+		if order.Type == MARKET {
+			return // TODO: Some sort of error ??
+		}
+		if book.SellOrders == nil {
+			level := NewLevel(order)
+			book.IdToPrice[order.Id] = PriceSide{order.Price, SELL, len(level.Orders) - 1}
+			book.SellOrders = level
+			return
+		}
+	}
+	order = book.matchOrderSell(order)
+	// NO one is buying at higher price
+	// than the highest
+	if order.Type == LIMIT && order.Size > 0 {
+		newLevel := book.SellOrders.Insert(order)
+		book.IdToPrice[order.Id] = PriceSide{order.Price, SELL, len(newLevel.Orders) - 1}
+		if newLevel != nil && newLevel.Price < book.bestSell() {
+			book.SellOrders = newLevel
+		}
+		return
+	}
+}
+
 func (book *OrderBook) Insert(order Order) {
 	switch order.Side {
 	case BUY:
-		if book.SellOrders == nil {
-			if order.Type == MARKET {
-				return // TODO: Some sort of error ??
-			}
-			if book.BuyOrders == nil {
-				level := OrderLevel{
-					Price:      order.Price,
-					Orders:     make([]Order, 0, 10),
-					OrderCount: order.Size,
-				}
-				level.Orders = append(level.Orders, order)
-				book.IdToPrice[order.Id] = PriceSide{order.Price, BUY, len(level.Orders) - 1}
-				book.BuyOrders = &level
-				return
-			}
-		}
-		order = book.matchOrderBuy(order)
-		// NO one is selling lower than the least
-		// selling price
-		if order.Type == LIMIT && order.Size > 0 {
-			newLevel := book.BuyOrders.Insert(order)
-			book.IdToPrice[order.Id] = PriceSide{order.Price, BUY, len(newLevel.Orders) - 1}
-			if newLevel != nil && newLevel.Price > book.bestBuy() {
-				book.BuyOrders = newLevel
-			}
-			return
-		}
+		book.insertBuy(order)
 	case SELL:
-		// IF there are no buy orders
-		if book.BuyOrders == nil { // unlikely
-			if order.Type == MARKET {
-				return // TODO: Some sort of error ??
-			}
-			if book.SellOrders == nil {
-				level := OrderLevel{
-					Price:      order.Price,
-					Orders:     make([]Order, 0, 10),
-					OrderCount: order.Size,
-				}
-				level.Orders = append(level.Orders, order)
-				book.IdToPrice[order.Id] = PriceSide{order.Price, SELL, len(level.Orders) - 1}
-				book.SellOrders = &level
-				return
-			}
-		}
-		order = book.matchOrderSell(order)
-		// NO one is buying at higher price
-		// than the highest
-		if order.Type == LIMIT && order.Size > 0 {
-			newLevel := book.SellOrders.Insert(order)
-			book.IdToPrice[order.Id] = PriceSide{order.Price, SELL, len(newLevel.Orders) - 1}
-			if newLevel != nil && newLevel.Price < book.bestSell() {
-				book.SellOrders = newLevel
-			}
-			return
-		}
+		book.insertSell(order)
 	}
 }
 
@@ -129,6 +127,7 @@ func (book *OrderBook) Delete(id int) bool {
 	if present == false {
 		return false
 	}
+	delete(book.IdToPrice, id)
 	switch price.Side {
 	case BUY:
 		return book.BuyOrders.Delete(id, price.Price, price.Offset)
@@ -172,3 +171,4 @@ SellOrderLoop:
 	}
 	return order
 }
+
