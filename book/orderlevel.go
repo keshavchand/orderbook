@@ -1,37 +1,33 @@
 package book
 
 import (
-	"fmt"
 	"io"
+	"log"
 )
 
 type OrderLevel struct {
 	Price        float32
-	Orders       []Order
+	Orders       Orders
 	GreaterLevel *OrderLevel
 	LesserLevel  *OrderLevel
 	OrderCount   int
-	Offset       int
 }
 
+/*
 // Return true if found false if not found
+// TODO: Currently it mainly does a linear search but should
+// be upgraded to priority queue on Order.Size bases
 func (level *OrderLevel) Delete(id int, price float32, offset int) bool {
 	for level.Price < price {
 		newLevel := level.GreaterLevel
-		if newLevel == nil {
-			return false
-		}
-		if newLevel.Price > price {
+		if newLevel == nil || newLevel.Price > price {
 			return false
 		}
 		level = newLevel
 	}
 	for level.Price > price {
 		newLevel := level.LesserLevel
-		if newLevel == nil {
-			return false
-		}
-		if newLevel.Price < price {
+		if newLevel == nil || newLevel.Price < price {
 			return false
 		}
 		level = newLevel
@@ -50,19 +46,38 @@ func (level *OrderLevel) Delete(id int, price float32, offset int) bool {
 	}
 	return false
 }
+*/
 
 func (level *OrderLevel) Match(order Order, outFile io.Writer) Order {
-	for idx, thisOrder := range level.Orders {
+	for {
+		thisOrder, err := level.Orders.Pop()
+		if err != nil {
+      switch err {
+			case ErrNoOrder:
+				return order
+			default:
+				// XXX: PANIC OR SOMETHING
+			}
+		}
 		tradeSize := min(order.Size, thisOrder.Size)
 		if tradeSize != 0 {
-			outFile.Write([]byte(fmt.Sprintf("%d traded at %f\n", tradeSize, order.Price)))
+			side := ""
+			switch order.Side {
+			case BUY:
+				side = "BUYING"
+			case SELL:
+				side = "SELLING"
+			}
+			log.Printf("%s at %0.2f from %d to %d of size %d",
+				side, level.Price, order.Id, thisOrder.Size, tradeSize)
 		}
 		order.Size -= tradeSize
-		level.Orders[idx].Size -= tradeSize
-		level.OrderCount -= tradeSize
-		level.Offset++
-		// Write the results to somewhere
+		thisOrder.Size -= tradeSize
+    level.OrderCount -= tradeSize
 		if order.Size == 0 {
+			if thisOrder.Size > 0 {
+				level.Orders.Add(thisOrder)
+			}
 			return order
 		}
 	}
@@ -72,19 +87,19 @@ func (level *OrderLevel) Match(order Order, outFile io.Writer) Order {
 func NewLevel(order Order) *OrderLevel {
 	newLevel := &OrderLevel{
 		Price:        order.Price,
-		Orders:       make([]Order, 0, 10),
+		Orders:       NewOrders(),
 		GreaterLevel: nil,
 		LesserLevel:  nil,
 		OrderCount:   order.Size,
 	}
-	newLevel.Orders = append(newLevel.Orders, order)
+	newLevel.Orders.Add(order)
 	return newLevel
 }
 
 func (level *OrderLevel) Insert(order Order) *OrderLevel {
 	// If orders are present then iterate
 	// to the level least less than the required level
-	if lvel == nil {
+	if level == nil {
 		return NewLevel(order)
 	}
 	if level.Price < order.Price {
@@ -96,7 +111,7 @@ func (level *OrderLevel) Insert(order Order) *OrderLevel {
 			level = level.GreaterLevel
 		}
 		if level.Price == order.Price {
-			level.Orders = append(level.Orders, order)
+			level.Orders.Add(order)
 			level.OrderCount += order.Size
 			return level
 		}
@@ -112,7 +127,7 @@ func (level *OrderLevel) Insert(order Order) *OrderLevel {
 			level = level.LesserLevel
 		}
 		if level.Price == order.Price {
-			level.Orders = append(level.Orders, order)
+			level.Orders.Add(order)
 			level.OrderCount += order.Size
 			return level
 		}
@@ -121,15 +136,7 @@ func (level *OrderLevel) Insert(order Order) *OrderLevel {
 		return newLevel
 	}
 
-	level.Orders = append(level.Orders, order)
+	level.Orders.Add(order)
 	level.OrderCount += order.Size
 	return level
 }
-
-/* TODO: convert OrderLevel into an interface to support multiple implementations
-type OrderLevel interface {
-  Delete(id int, price float32, offset int) bool
-  Match(order Order, outFile io.Writer) Order
-  Insert(order Order) *OrderLevel
-}
-*/

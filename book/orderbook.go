@@ -20,9 +20,8 @@ const (
 )
 
 type PriceSide struct {
-	Price  float32
-	Side   OrderSide
-	Offset int
+	Price float32
+	Side  OrderSide
 }
 
 type OrderBook struct {
@@ -69,7 +68,7 @@ func (book *OrderBook) insertBuy(order Order) {
 		}
 		if book.BuyOrders == nil {
 			level := NewLevel(order)
-			book.IdToPrice[order.Id] = PriceSide{order.Price, BUY, len(level.Orders) - 1}
+			book.IdToPrice[order.Id] = PriceSide{order.Price, BUY}
 			book.BuyOrders = level
 			return
 		}
@@ -79,7 +78,7 @@ func (book *OrderBook) insertBuy(order Order) {
 	// selling price
 	if order.Type == LIMIT && order.Size > 0 {
 		newLevel := book.BuyOrders.Insert(order)
-		book.IdToPrice[order.Id] = PriceSide{order.Price, BUY, len(newLevel.Orders) - 1}
+		book.IdToPrice[order.Id] = PriceSide{order.Price, BUY}
 		if newLevel != nil && newLevel.Price > book.bestBuy() {
 			book.BuyOrders = newLevel
 		}
@@ -95,7 +94,7 @@ func (book *OrderBook) insertSell(order Order) {
 		}
 		if book.SellOrders == nil {
 			level := NewLevel(order)
-			book.IdToPrice[order.Id] = PriceSide{order.Price, SELL, len(level.Orders) - 1}
+			book.IdToPrice[order.Id] = PriceSide{order.Price, SELL}
 			book.SellOrders = level
 			return
 		}
@@ -105,7 +104,7 @@ func (book *OrderBook) insertSell(order Order) {
 	// than the highest
 	if order.Type == LIMIT && order.Size > 0 {
 		newLevel := book.SellOrders.Insert(order)
-		book.IdToPrice[order.Id] = PriceSide{order.Price, SELL, len(newLevel.Orders) - 1}
+		book.IdToPrice[order.Id] = PriceSide{order.Price, SELL}
 		if newLevel != nil && newLevel.Price < book.bestSell() {
 			book.SellOrders = newLevel
 		}
@@ -122,6 +121,7 @@ func (book *OrderBook) Insert(order Order) {
 	}
 }
 
+/*
 func (book *OrderBook) Delete(id int) bool {
 	price, present := book.IdToPrice[id]
 	if present == false {
@@ -130,12 +130,13 @@ func (book *OrderBook) Delete(id int) bool {
 	delete(book.IdToPrice, id)
 	switch price.Side {
 	case BUY:
-		return book.BuyOrders.Delete(id, price.Price, price.Offset)
+		return book.BuyOrders.Delete(id, price.Price)
 	case SELL:
-		return book.SellOrders.Delete(id, price.Price, price.Offset)
+		return book.SellOrders.Delete(id, price.Price)
 	}
 	return false
 }
+*/
 
 func (book *OrderBook) matchOrderBuy(order Order) Order {
 BuyOrderLoop:
@@ -171,4 +172,3 @@ SellOrderLoop:
 	}
 	return order
 }
-
