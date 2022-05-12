@@ -2,20 +2,21 @@ package book
 
 import (
 	"math"
+  "log"
 )
 
 type OrderSide int
 
 const (
 	BUY  OrderSide = iota
-	SELL OrderSide = iota
+	SELL
 )
 
 type OrderType int
 
 const (
 	LIMIT  OrderType = iota
-	MARKET OrderType = iota
+	MARKET
 )
 
 type PriceSide struct {
@@ -38,7 +39,8 @@ type Order struct {
 }
 
 type TradeReporter func(to int, from int, price float32, size int)
-func reporterStub(to int, from int, price float32, size int){
+
+func reporterStub(to int, from int, price float32, size int) {
 	log.Printf("Traded at %0.2f from %d to %d of size %d", price, to, from, size)
 }
 
@@ -118,7 +120,6 @@ func (book *OrderBook) Insert(order Order) {
 		book.insertSell(order)
 	}
 }
-
 
 func (book *OrderBook) matchOrderBuy(order Order) Order {
 	for order.Size > 0 {

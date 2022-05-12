@@ -9,41 +9,41 @@ type OrderLevel struct {
 }
 
 func (level *OrderLevel) Match(order Order, reporter TradeReporter) Order {
-  for order.Size > 0 {
-    thisOrder, err := level.Orders.Pop()
-    if err != nil {
-      switch err {
-      case ErrNoOrder:
-        return order
-      default:
-        return order // XXX: PANIC OR SOMETHING
-      }
-    }
+	for order.Size > 0 {
+		thisOrder, err := level.Orders.Pop()
+		if err != nil {
+			switch err {
+			case ErrNoOrder:
+				return order
+			default:
+				return order // XXX: PANIC OR SOMETHING
+			}
+		}
 
-    tradeSize := min(order.Size, thisOrder.Size)
-    if tradeSize == 0 {
-      continue
-    }
-    if reporter == nil {
-      reporter = reporterStub
-    }
+		tradeSize := min(order.Size, thisOrder.Size)
+		if tradeSize == 0 {
+			continue
+		}
+		if reporter == nil {
+			reporter = reporterStub
+		}
 
-    to := thisOrder.Id
-    from := order.Id
-    if order.Side == BUY {
-      to, from = from, to
-    }
-    reporter(to, from, order.Price, tradeSize)
+		to := thisOrder.Id
+		from := order.Id
+		if order.Side == BUY {
+			to, from = from, to
+		}
+		reporter(to, from, order.Price, tradeSize)
 
-    order.Size -= tradeSize
-    thisOrder.Size -= tradeSize
-    level.OrderCount -= tradeSize
+		order.Size -= tradeSize
+		thisOrder.Size -= tradeSize
+		level.OrderCount -= tradeSize
 
-    if thisOrder.Size > 0 {
-      level.Orders.Add(thisOrder)
-    }
-  }
-  return order
+		if thisOrder.Size > 0 {
+			level.Orders.Add(thisOrder)
+		}
+	}
+	return order
 }
 
 func NewLevel(order Order) *OrderLevel {
