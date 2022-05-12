@@ -1,7 +1,6 @@
 package book
 
 import (
-	"io"
 	"math"
 )
 
@@ -27,9 +26,7 @@ type PriceSide struct {
 type OrderBook struct {
 	BuyOrders  *OrderLevel
 	SellOrders *OrderLevel
-	OutFile    io.Writer
-	// mapping from id to price
-	IdToPrice map[int]PriceSide
+	reporter   TradeReporter
 }
 
 type Order struct {
@@ -38,6 +35,11 @@ type Order struct {
 	Type  OrderType
 	Size  int
 	Id    int
+}
+
+type TradeReporter func(to int, from int, price float32, size int)
+func reporterStub(to int, from int, price float32, size int){
+	log.Printf("Traded at %0.2f from %d to %d of size %d", price, to, from, size)
 }
 
 func (book *OrderBook) bestBuy() float32 {
@@ -68,7 +70,6 @@ func (book *OrderBook) insertBuy(order Order) {
 		}
 		if book.BuyOrders == nil {
 			level := NewLevel(order)
-			book.IdToPrice[order.Id] = PriceSide{order.Price, BUY}
 			book.BuyOrders = level
 			return
 		}
@@ -78,7 +79,6 @@ func (book *OrderBook) insertBuy(order Order) {
 	// selling price
 	if order.Type == LIMIT && order.Size > 0 {
 		newLevel := book.BuyOrders.Insert(order)
-		book.IdToPrice[order.Id] = PriceSide{order.Price, BUY}
 		if newLevel != nil && newLevel.Price > book.bestBuy() {
 			book.BuyOrders = newLevel
 		}
@@ -94,7 +94,6 @@ func (book *OrderBook) insertSell(order Order) {
 		}
 		if book.SellOrders == nil {
 			level := NewLevel(order)
-			book.IdToPrice[order.Id] = PriceSide{order.Price, SELL}
 			book.SellOrders = level
 			return
 		}
@@ -104,7 +103,6 @@ func (book *OrderBook) insertSell(order Order) {
 	// than the highest
 	if order.Type == LIMIT && order.Size > 0 {
 		newLevel := book.SellOrders.Insert(order)
-		book.IdToPrice[order.Id] = PriceSide{order.Price, SELL}
 		if newLevel != nil && newLevel.Price < book.bestSell() {
 			book.SellOrders = newLevel
 		}
@@ -121,33 +119,16 @@ func (book *OrderBook) Insert(order Order) {
 	}
 }
 
-/*
-func (book *OrderBook) Delete(id int) bool {
-	price, present := book.IdToPrice[id]
-	if present == false {
-		return false
-	}
-	delete(book.IdToPrice, id)
-	switch price.Side {
-	case BUY:
-		return book.BuyOrders.Delete(id, price.Price)
-	case SELL:
-		return book.SellOrders.Delete(id, price.Price)
-	}
-	return false
-}
-*/
 
 func (book *OrderBook) matchOrderBuy(order Order) Order {
-BuyOrderLoop:
 	for order.Size > 0 {
 		// If the buying price is greater than
 		// the highest selling price then we can't
 		// do anything about it
 		if order.Type == LIMIT && order.Price < book.bestSell() {
-			break BuyOrderLoop
+			break
 		}
-		order = book.SellOrders.Match(order, book.OutFile)
+		order = book.SellOrders.Match(order, book.reporter)
 
 		if book.SellOrders.OrderCount == 0 {
 			book.SellOrders = book.SellOrders.GreaterLevel
@@ -157,15 +138,14 @@ BuyOrderLoop:
 }
 
 func (book *OrderBook) matchOrderSell(order Order) Order {
-SellOrderLoop:
 	for order.Size > 0 {
 		// If the buying price is lesser than
 		// the lowest buying price then we can't
 		// do anything about it
 		if order.Type == LIMIT && order.Price > book.bestBuy() {
-			break SellOrderLoop
+			break
 		}
-		order = book.BuyOrders.Match(order, book.OutFile)
+		order = book.BuyOrders.Match(order, book.reporter)
 		if book.BuyOrders.OrderCount == 0 {
 			book.BuyOrders = book.BuyOrders.LesserLevel
 		}

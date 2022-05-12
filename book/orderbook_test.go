@@ -15,13 +15,11 @@ func (w WriterStub) Write(b []byte) (int, error) {
 func CreateOrderBook(book OrderBook) {
 	fmt.Println(`
 	book := OrderBook{}
-	book.OutFile = WriterStub{}
-	book.IdToPrice = make(map[int]PriceSide)
   `)
 
 	buySide := book.BuyOrders
 	for buySide != nil {
-    for _, order := range buySide.Orders.o[1:] {
+		for _, order := range buySide.Orders.o[1:] {
 			t := "LIMIT"
 			if order.Type == MARKET {
 				t = "MARKET"
@@ -39,7 +37,7 @@ func CreateOrderBook(book OrderBook) {
 
 	sellSide := book.SellOrders
 	for sellSide != nil {
-    for _, order := range sellSide.Orders.o[1:] {
+		for _, order := range sellSide.Orders.o[1:] {
 			t := "LIMIT"
 			if order.Type == MARKET {
 				t = "MARKET"
@@ -138,13 +136,13 @@ func SameOrderBook(t *testing.T, book1, book2 OrderBook) {
 			lvl1_orders := make([]Order, 0, book1_lvl.OrderCount)
 			lvl2_orders := make([]Order, 0, book2_lvl.OrderCount)
 
-      for _, order := range book1_lvl.Orders.o[1:] {
+			for _, order := range book1_lvl.Orders.o[1:] {
 				if order.Size == 0 {
 					continue
 				}
 				lvl1_orders = append(lvl1_orders, order)
 			}
-      for _, order := range book2_lvl.Orders.o[1:] {
+			for _, order := range book2_lvl.Orders.o[1:] {
 				if order.Size == 0 {
 					continue
 				}
@@ -195,11 +193,10 @@ func SameOrders(t *testing.T, o1, o2 Order) bool {
 }
 
 func Test_OrderBook_Add_Buy(t *testing.T) {
-  fmt.Println("----------------------------------")
-  defer fmt.Println("----------------------------------")
+	fmt.Println("----------------------------------")
+	defer fmt.Println("----------------------------------")
 	book := OrderBook{}
-	book.OutFile = WriterStub{}
-	book.IdToPrice = make(map[int]PriceSide)
+	//book.IdToPrice = make(map[int]PriceSide)
 	book.Insert(Order{10.0, BUY, LIMIT, 10, 0})
 	if book.BuyOrders.Price == 10.0 &&
 		book.BuyOrders.OrderCount == 10 &&
@@ -211,11 +208,10 @@ func Test_OrderBook_Add_Buy(t *testing.T) {
 }
 
 func Test_OrderBook_Add_Sell(t *testing.T) {
-  fmt.Println("----------------------------------")
-  defer fmt.Println("----------------------------------")
+	fmt.Println("----------------------------------")
+	defer fmt.Println("----------------------------------")
 	book := OrderBook{}
-	book.OutFile = WriterStub{}
-	book.IdToPrice = make(map[int]PriceSide)
+	//book.IdToPrice = make(map[int]PriceSide)
 	book.Insert(Order{10.0, SELL, LIMIT, 10, 0})
 	if book.SellOrders.Price == 10.0 &&
 		book.SellOrders.OrderCount == 10 &&
@@ -227,11 +223,10 @@ func Test_OrderBook_Add_Sell(t *testing.T) {
 }
 
 func Test_OrderBook_Add_Buy_Market(t *testing.T) {
-  fmt.Println("----------------------------------")
-  defer fmt.Println("----------------------------------")
+	fmt.Println("----------------------------------")
+	defer fmt.Println("----------------------------------")
 	book := OrderBook{}
-	book.OutFile = WriterStub{}
-	book.IdToPrice = make(map[int]PriceSide)
+	//book.IdToPrice = make(map[int]PriceSide)
 	book.Insert(Order{10.0, SELL, MARKET, 10, 0})
 	if book.SellOrders == nil {
 		return
@@ -240,51 +235,65 @@ func Test_OrderBook_Add_Buy_Market(t *testing.T) {
 }
 
 func Test_OrderBook_MatchOrder_Sell(t *testing.T) {
-  fmt.Println("----------------------------------")
-  defer fmt.Println("----------------------------------")
+	fmt.Println("----------------------------------")
+	defer fmt.Println("----------------------------------")
 	book1 := OrderBook{}
-	book1.OutFile = WriterStub{}
-	book1.IdToPrice = make(map[int]PriceSide)
+	//book1.IdToPrice = make(map[int]PriceSide)
 	book1.Insert(Order{10.0, SELL, LIMIT, 10, 0})
 	book1.Insert(Order{15.0, SELL, LIMIT, 10, 1})
 	book1.Insert(Order{20.0, BUY, LIMIT, 15, 2})
 
 	book2 := OrderBook{}
-	book2.OutFile = WriterStub{}
-	book2.IdToPrice = make(map[int]PriceSide)
+	//book2.IdToPrice = make(map[int]PriceSide)
 	book2.Insert(Order{15.0, SELL, LIMIT, 5, 1})
 	SameOrderBook(t, book1, book2)
 }
 
-/* Delete is unimplemented
+// TODO: convert every test into this format
 func Test_OrderBook_MatchOrder_Buy(t *testing.T) {
-	book1 := OrderBook{}
-	book1.OutFile = WriterStub{}
-	book1.IdToPrice = make(map[int]PriceSide)
-	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
-	book1.Insert(Order{10.0, BUY, LIMIT, 10, 1})
-	book1.Insert(Order{10.0, SELL, LIMIT, 15, 2})
+	cases := []struct {
+		name    string
+		tests   []Order
+		results []Order
+	}{
+		{
+			name: "Matching Buy Order",
+			tests: []Order{
+				Order{20.0, BUY, LIMIT, 10, 0},
+				Order{10.0, BUY, LIMIT, 10, 1},
+				Order{10.0, SELL, LIMIT, 100, 2},
+			},
+			results: []Order{
+				Order{10.0, SELL, LIMIT, 80, 2},
+			},
+		},
+	}
+	for _, c := range cases {
+		book1 := OrderBook{}
+		book2 := OrderBook{}
 
-	book2 := OrderBook{}
-	book2.OutFile = WriterStub{}
-	book2.IdToPrice = make(map[int]PriceSide)
-	book2.Insert(Order{10.0, BUY, LIMIT, 5, 1})
+		for _, o := range c.tests {
+			book1.Insert(o)
+		}
+		for _, o := range c.results {
+			book2.Insert(o)
+		}
 
-	SameOrderBook(t, book1, book2)
+		SameOrderBook(t, book1, book2)
+	}
 }
 
+/* Delete is UNIMPLEMENTED
 func Test_OrderDelete(t *testing.T) {
 	book1 := OrderBook{}
-	book1.OutFile = WriterStub{}
-	book1.IdToPrice = make(map[int]PriceSide)
+	//book1.IdToPrice = make(map[int]PriceSide)
 	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 1})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 2})
 	book1.Delete(1)
 
 	book2 := OrderBook{}
-	book2.OutFile = WriterStub{}
-	book2.IdToPrice = make(map[int]PriceSide)
+	//book2.IdToPrice = make(map[int]PriceSide)
 	book2.Insert(Order{20.0, BUY, LIMIT, 10, 0})
 	book2.Insert(Order{10.0, BUY, LIMIT, 10, 2})
 
@@ -293,16 +302,14 @@ func Test_OrderDelete(t *testing.T) {
 
 func Test_OrderDelete_AfterMatching(t *testing.T) {
 	book1 := OrderBook{}
-	book1.OutFile = WriterStub{}
-	book1.IdToPrice = make(map[int]PriceSide)
+	//book1.IdToPrice = make(map[int]PriceSide)
 	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 1})
 	book1.Insert(Order{5.0, SELL, LIMIT, 10, 2})
 	book1.Delete(0)
 
 	book2 := OrderBook{}
-	book2.OutFile = WriterStub{}
-	book2.IdToPrice = make(map[int]PriceSide)
+	//book2.IdToPrice = make(map[int]PriceSide)
 	book2.Insert(Order{10.0, BUY, LIMIT, 10, 1})
 
 	SameOrderBook(t, book1, book2)
@@ -311,8 +318,7 @@ func Test_OrderDelete_AfterMatching(t *testing.T) {
 
 func FuzzOrderBook(f *testing.F) {
 	someComp := OrderBook{}
-	someComp.OutFile = WriterStub{}
-	someComp.IdToPrice = make(map[int]PriceSide)
+	//someComp.IdToPrice = make(map[int]PriceSide)
 
 	f.Add(float32(10.0), uint(10))
 	var i int32 = 0
@@ -324,11 +330,10 @@ func FuzzOrderBook(f *testing.F) {
 
 func Test_BenchMark(t *testing.T) {
 	someComp := OrderBook{}
-	someComp.OutFile = WriterStub{}
-	someComp.IdToPrice = make(map[int]PriceSide)
+	//someComp.IdToPrice = make(map[int]PriceSide)
 
 	i := 0
-	for n := 0; n < 2; n++ {
+	for n := 0; n < 10; n++ {
 		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
 		i++
 		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
@@ -360,8 +365,7 @@ func Test_BenchMark(t *testing.T) {
 }
 func Benchmark_OrderWriting(b *testing.B) {
 	someComp := OrderBook{}
-	someComp.OutFile = WriterStub{}
-	someComp.IdToPrice = make(map[int]PriceSide)
+	//someComp.IdToPrice = make(map[int]PriceSide)
 
 	i := 0
 	for n := 0; n < b.N; n++ {
