@@ -10,3 +10,6 @@
     * Can show the amout held by them
     * Can show the trades in specified time frame ( some sort of timeseries db?? )
     * Calculate the total trading charges for them ( won't be a priority )
+
+* Support Order Deletion
+    * Was Supported in the previous version but removed due to added complexity with the PRO RATA system
