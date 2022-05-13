@@ -33,7 +33,7 @@ func (level *OrderLevel) Match(order Order, reporter TradeReporter) Order {
 		if order.Side == BUY {
 			to, from = from, to
 		}
-		reporter(to, from, order.Price, tradeSize)
+		reporter(to, from, thisOrder.Price, tradeSize)
 
 		order.Size -= tradeSize
 		thisOrder.Size -= tradeSize

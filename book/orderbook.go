@@ -1,21 +1,21 @@
 package book
 
 import (
+	"log"
 	"math"
-  "log"
 )
 
 type OrderSide int
 
 const (
-	BUY  OrderSide = iota
+	BUY OrderSide = iota
 	SELL
 )
 
 type OrderType int
 
 const (
-	LIMIT  OrderType = iota
+	LIMIT OrderType = iota
 	MARKET
 )
 
@@ -27,7 +27,7 @@ type PriceSide struct {
 type OrderBook struct {
 	BuyOrders  *OrderLevel
 	SellOrders *OrderLevel
-	reporter   TradeReporter
+	Reporter   TradeReporter
 }
 
 type Order struct {
@@ -129,7 +129,7 @@ func (book *OrderBook) matchOrderBuy(order Order) Order {
 		if order.Type == LIMIT && order.Price < book.bestSell() {
 			break
 		}
-		order = book.SellOrders.Match(order, book.reporter)
+		order = book.SellOrders.Match(order, book.Reporter)
 
 		if book.SellOrders.OrderCount == 0 {
 			book.SellOrders = book.SellOrders.GreaterLevel
@@ -146,7 +146,7 @@ func (book *OrderBook) matchOrderSell(order Order) Order {
 		if order.Type == LIMIT && order.Price > book.bestBuy() {
 			break
 		}
-		order = book.BuyOrders.Match(order, book.reporter)
+		order = book.BuyOrders.Match(order, book.Reporter)
 		if book.BuyOrders.OrderCount == 0 {
 			book.BuyOrders = book.BuyOrders.LesserLevel
 		}

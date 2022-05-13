@@ -1,8 +1,19 @@
 package main
 
-import "github.com/keshavchand/orderbook/book"
+import (
+	"github.com/keshavchand/orderbook/book"
+	"github.com/keshavchand/orderbook/report"
+)
 
 func main() {
-  comp := book.OrderBook{}
-  print(comp.BuyOrders)
+	var history report.TradeHistory
+	comp := book.OrderBook{
+		Reporter: history.Report,
+	}
+	var sample []book.Order
+	sample = append(sample, book.Order{20.0, book.BUY, book.LIMIT, 10, 1})
+	sample = append(sample, book.Order{10.0, book.SELL, book.LIMIT, 10, 0})
+	for _, s := range sample {
+		comp.Insert(s)
+	}
 }
