@@ -1,13 +1,12 @@
 package main
 
 import (
-	"log"
-
 	"github.com/keshavchand/orderbook/book"
+	"github.com/keshavchand/orderbook/report"
 )
 
 func main() {
-  logger := TradeLogger{}
+	logger := report.TradeLogger{}
 	comp := book.OrderBook{}
 	var sample []book.Order
 	sample = append(sample, book.Order{20.0, book.BUY, book.LIMIT, 10, 1})
