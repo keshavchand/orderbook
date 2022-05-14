@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync/atomic"
 	"testing"
+
 )
 
 type WriterStub struct{}
@@ -193,8 +194,6 @@ func SameOrders(t *testing.T, o1, o2 Order) bool {
 }
 
 func Test_OrderBook_Add_Buy(t *testing.T) {
-	fmt.Println("----------------------------------")
-	defer fmt.Println("----------------------------------")
 	book := OrderBook{}
 	//book.IdToPrice = make(map[int]PriceSide)
 	book.Insert(Order{10.0, BUY, LIMIT, 10, 0})
@@ -208,8 +207,6 @@ func Test_OrderBook_Add_Buy(t *testing.T) {
 }
 
 func Test_OrderBook_Add_Sell(t *testing.T) {
-	fmt.Println("----------------------------------")
-	defer fmt.Println("----------------------------------")
 	book := OrderBook{}
 	//book.IdToPrice = make(map[int]PriceSide)
 	book.Insert(Order{10.0, SELL, LIMIT, 10, 0})
@@ -223,8 +220,6 @@ func Test_OrderBook_Add_Sell(t *testing.T) {
 }
 
 func Test_OrderBook_Add_Buy_Market(t *testing.T) {
-	fmt.Println("----------------------------------")
-	defer fmt.Println("----------------------------------")
 	book := OrderBook{}
 	//book.IdToPrice = make(map[int]PriceSide)
 	book.Insert(Order{10.0, SELL, MARKET, 10, 0})
@@ -235,8 +230,6 @@ func Test_OrderBook_Add_Buy_Market(t *testing.T) {
 }
 
 func Test_OrderBook_MatchOrder_Sell(t *testing.T) {
-	fmt.Println("----------------------------------")
-	defer fmt.Println("----------------------------------")
 	book1 := OrderBook{}
 	//book1.IdToPrice = make(map[int]PriceSide)
 	book1.Insert(Order{10.0, SELL, LIMIT, 10, 0})

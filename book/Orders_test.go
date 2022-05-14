@@ -1,11 +1,13 @@
 package book
 
-import "testing"
+import (
+	"testing"
+)
 
 func Test_OrdersInsert(t *testing.T) {
 	orders := NewOrders()
 	for i := 0; i <= 10; i++ {
-		order := Order{10.0, BUY, MARKET, i, i}
+		order := Order{10.0, BUY, LIMIT, i, i}
 		orders.Add(order)
 	}
 	for i := 10; i >= 0; i-- {
@@ -26,7 +28,7 @@ func Test_OrdersInsert(t *testing.T) {
 func Test_OrdersInsertAfterPop(t *testing.T) {
 	orders := NewOrders()
 	for i := 0; i <= 10; i++ {
-		order := Order{10.0, BUY, MARKET, i, 0}
+		order := Order{10.0, BUY, LIMIT, i, 0}
 		orders.Add(order)
 	}
 	for i := 10; i >= 5; i-- {
@@ -40,7 +42,7 @@ func Test_OrdersInsertAfterPop(t *testing.T) {
 	}
 
 	for i := 5; i <= 10; i++ {
-		order := Order{10.0, BUY, MARKET, i, 1}
+		order := Order{10.0, BUY, LIMIT, i, 1}
 		orders.Add(order)
 	}
 	for i := 10; i >= 0; i-- {

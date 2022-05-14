@@ -1,20 +1,11 @@
 package report
 
-import "log"
+import "github.com/keshavchand/orderbook/cti"
 
-type Trade struct {
-	To    int
-	From  int
-	Price float32
-	Size  int
+type TradeLogger struct {
+	Orders []cti.TradedOrder
 }
 
-type TradeHistory struct {
-	Trades []Trade
-}
-
-func (t *TradeHistory) Report(to int, from int, price float32, size int) {
-	t.Trades = append(t.Trades, Trade{to, from, price, size})
-	log.Printf("Traded at %0.2f from %d to %d of size %d",
-		price, from, to, size)
+func (l *TradeLogger) Log(o []cti.TradedOrder) {
+	l.Orders = append(l.Orders, o...)
 }
