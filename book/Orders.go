@@ -2,6 +2,8 @@ package book
 
 import "errors"
 
+//TODO: REMOVE CAPITAL LETTERS FROM FUNCTION NAMES
+
 // Implements priority heap data structure
 type Orders struct {
 	o     []Order
@@ -16,7 +18,7 @@ func NewOrders() Orders {
 	return o
 }
 
-func (o *Orders) Add(order Order) {
+func (o *Orders) PropagateUp(l int) {
 	parent := func(n int) int {
 		if n <= 1 {
 			return 1
@@ -24,18 +26,7 @@ func (o *Orders) Add(order Order) {
 		return n / 2
 	}
 
-	lastWritten := 0
-	if o.items == len(o.o)-1 {
-		o.o = append(o.o, order)
-		lastWritten = len(o.o) - 1
-		o.items++
-	} else {
-		o.items++
-		o.o[o.items] = order
-		lastWritten = o.items
-	}
-
-	c := lastWritten
+	c := l
 	p := parent(c)
 	for o.o[p].Size < o.o[c].Size {
 		o.o[p], o.o[c] = o.o[c], o.o[p]
@@ -44,23 +35,29 @@ func (o *Orders) Add(order Order) {
 	}
 }
 
+func (o *Orders) Add(order Order) {
+	lastWritten := 0
+	if o.items == len(o.o)-1 {
+		o.items++
+		o.o = append(o.o, order)
+		lastWritten = len(o.o) - 1
+	} else {
+		o.items++
+		o.o[o.items] = order
+		lastWritten = o.items
+	}
+  o.PropagateUp(lastWritten)
+}
+
 var (
 	ErrNoOrder = errors.New("no orders at the level")
 )
 
-func (o *Orders) Pop() (Order, error) {
-	var order Order
-	if len(o.o) <= 1 || o.items == 0 {
-		return order, ErrNoOrder
-	}
-
-	order = o.o[1]
-	o.o[1] = o.o[o.items]
-
+func (o *Orders) PropagateDown(l int) {
 	child := func(parent int) (int, int) {
 		return 2 * parent, 2*parent + 1
 	}
-	p := 1
+	p := l
 	c1, c2 := child(p)
 	for {
 		if c1 < o.items && c2 < o.items {
@@ -95,7 +92,17 @@ func (o *Orders) Pop() (Order, error) {
 			break
 		}
 	}
+}
 
+func (o *Orders) Pop() (Order, error) {
+	var order Order
+	if len(o.o) <= 1 || o.items == 0 {
+		return order, ErrNoOrder
+	}
+
+	order = o.o[1]
+	o.o[1] = o.o[o.items]
+  o.PropagateDown(1)
 	o.items--
 	return order, nil
 }
@@ -107,4 +114,21 @@ func (o *Orders) Peek() (Order, error) {
 	}
 	order = o.o[1]
 	return order, nil
+}
+
+func (o *Orders) Remove(id int) (Order, bool) {
+  var tOrder Order
+	for i, order := range o.o[1:] {
+		i := i + 1
+		if order.Id == id {
+      tOrder = order
+			o.o[i].Size = 0
+			o.o[i], o.o[o.items] = o.o[o.items], o.o[i]
+			o.PropagateDown(i)
+			o.items--
+			return tOrder, true
+		}
+	}
+
+	return tOrder, false
 }

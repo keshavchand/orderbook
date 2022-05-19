@@ -15,7 +15,7 @@ func Test_OrdersInsert(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%v\n", err)
 		}
-		if order.Size != i {
+		if order.Id != i {
 			t.Fatalf("Size diff than expection %d vs %d\n", order.Size, i)
 		}
 	}
@@ -53,5 +53,33 @@ func Test_OrdersInsertAfterPop(t *testing.T) {
 		if order.Size != i {
 			t.Fatalf("Size diff than expection %d vs %d\n", order.Size, i)
 		}
+	}
+}
+
+func Test_OrdersDelete(t *testing.T) {
+	orders := NewOrders()
+	for i := 1; i <= 10; i++ {
+		order := Order{10.0, BUY, LIMIT, i, i}
+		orders.Add(order)
+	}
+	for i := 5; i > 0; i-- {
+		orders.Remove(i)
+	}
+	for i := 10; i >= 6; i-- {
+		if i == 5 {
+			continue
+		}
+		o, err := orders.Pop()
+		if err != nil {
+			t.Fatalf("Wrong Order %v", err)
+		}
+		if o.Size != i {
+			t.Fatalf("Different Orders")
+		}
+	}
+
+	o, err := orders.Pop()
+	if err == nil {
+		t.Fatalf("%v Orders Left", o)
 	}
 }
