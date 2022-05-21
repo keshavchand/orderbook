@@ -108,3 +108,34 @@ func (level *OrderLevel) insert(order Order) *OrderLevel {
 	level.OrderCount += order.Size
 	return level
 }
+
+func (level *OrderLevel) remove(Price float32, id int) (Order, bool) {
+  var o Order
+	if level == nil {
+		return o, false
+	}
+	if level.Price < Price {
+		for level.Price != Price &&
+			level.GreaterLevel != nil &&
+			level.GreaterLevel.Price <= Price {
+			level = level.GreaterLevel
+		}
+		if level.Price != Price {
+		return o, false
+		}
+	} else if level.Price > Price {
+		for level.Price != Price &&
+			level.LesserLevel != nil &&
+			level.LesserLevel.Price >= Price {
+			level = level.LesserLevel
+		}
+		if level.Price != Price {
+			return o, false
+		}
+	}
+  o, present := level.Orders.Remove(id)
+  if present {
+    level.OrderCount -= o.Size
+  }
+  return o, true
+}

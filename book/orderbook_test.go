@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sync/atomic"
 	"testing"
-
 )
 
 type WriterStub struct{}
@@ -84,21 +83,8 @@ func SameOrderBook(t *testing.T, book1, book2 OrderBook) {
 			if book1_lvl.Price != book2_lvl.Price {
 				t.Errorf(`Books probably misses levels book1 %f vs book2 %f`, book1_lvl.Price, book2_lvl.Price)
 			}
-			lvl1_orders := make([]Order, 0, book1_lvl.OrderCount)
-			lvl2_orders := make([]Order, 0, book2_lvl.OrderCount)
-
-			for _, order := range book1_lvl.Orders.o {
-				if order.Size == 0 {
-					continue
-				}
-				lvl1_orders = append(lvl1_orders, order)
-			}
-			for _, order := range book2_lvl.Orders.o {
-				if order.Size == 0 {
-					continue
-				}
-				lvl2_orders = append(lvl2_orders, order)
-			}
+			lvl1_orders := book1_lvl.Orders.o[1 : book1_lvl.Orders.items+1]
+			lvl2_orders := book2_lvl.Orders.o[1 : book2_lvl.Orders.items+1]
 
 			if len(lvl1_orders) != len(lvl2_orders) {
 				t.Errorf("Orders level Size different %d vs %d", len(lvl1_orders), len(lvl2_orders))
@@ -134,21 +120,9 @@ func SameOrderBook(t *testing.T, book1, book2 OrderBook) {
 				t.Errorf(`Books probably misses levels book1 %f vs book2 %f`, book1_lvl.Price, book2_lvl.Price)
 				return
 			}
-			lvl1_orders := make([]Order, 0, book1_lvl.OrderCount)
-			lvl2_orders := make([]Order, 0, book2_lvl.OrderCount)
 
-			for _, order := range book1_lvl.Orders.o[1:] {
-				if order.Size == 0 {
-					continue
-				}
-				lvl1_orders = append(lvl1_orders, order)
-			}
-			for _, order := range book2_lvl.Orders.o[1:] {
-				if order.Size == 0 {
-					continue
-				}
-				lvl2_orders = append(lvl2_orders, order)
-			}
+			lvl1_orders := book1_lvl.Orders.o[1 : book1_lvl.Orders.items+1]
+			lvl2_orders := book2_lvl.Orders.o[1 : book2_lvl.Orders.items+1]
 
 			if len(lvl1_orders) != len(lvl2_orders) {
 				t.Errorf("Orders level Size different %d vs %d", len(lvl1_orders), len(lvl2_orders))
@@ -186,7 +160,7 @@ func SameOrders(t *testing.T, o1, o2 Order) bool {
 		return false
 	}
 	if o1.Id != o2.Id {
-		t.Errorf("Order Ids different")
+		t.Errorf("Order Ids different %d vs %d", o1.Id, o2.Id)
 		return false
 	}
 
@@ -276,38 +250,50 @@ func Test_OrderBook_MatchOrder_Buy(t *testing.T) {
 	}
 }
 
-/* Delete is UNIMPLEMENTED
-func Test_OrderDelete(t *testing.T) {
+func Test_OrderRemove(t *testing.T) {
 	book1 := OrderBook{}
-	//book1.IdToPrice = make(map[int]PriceSide)
 	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 1})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 2})
-	book1.Delete(1)
+	book1.Remove(1)
 
 	book2 := OrderBook{}
-	//book2.IdToPrice = make(map[int]PriceSide)
 	book2.Insert(Order{20.0, BUY, LIMIT, 10, 0})
 	book2.Insert(Order{10.0, BUY, LIMIT, 10, 2})
 
 	SameOrderBook(t, book1, book2)
 }
 
-func Test_OrderDelete_AfterMatching(t *testing.T) {
+
+func Test_OrderRemove_AfterMatching(t *testing.T) {
 	book1 := OrderBook{}
-	//book1.IdToPrice = make(map[int]PriceSide)
 	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 1})
 	book1.Insert(Order{5.0, SELL, LIMIT, 10, 2})
-	book1.Delete(0)
+	book1.Remove(0)
 
 	book2 := OrderBook{}
-	//book2.IdToPrice = make(map[int]PriceSide)
 	book2.Insert(Order{10.0, BUY, LIMIT, 10, 1})
 
 	SameOrderBook(t, book1, book2)
 }
-*/
+
+func Test_OrderUpdateSize(t *testing.T) {
+  for _, s := range []OrderSide{BUY, SELL}{
+    book1 := OrderBook{}
+    book1.Insert(Order{20.0, s, LIMIT, 10, 0})
+    book1.Insert(Order{10.0, s, LIMIT, 10, 1})
+    book1.Insert(Order{10.0, s, LIMIT, 10, 2})
+    book1.UpdateSize(1, 20)
+
+    book2 := OrderBook{}
+    book2.Insert(Order{20.0, s, LIMIT, 10, 0})
+    book2.Insert(Order{10.0, s, LIMIT, 20, 1})
+    book2.Insert(Order{10.0, s, LIMIT, 10, 2})
+
+    SameOrderBook(t, book1, book2)
+  }
+}
 
 func FuzzOrderBook(f *testing.F) {
 	someComp := OrderBook{}
@@ -321,6 +307,7 @@ func FuzzOrderBook(f *testing.F) {
 	})
 }
 
+/*
 func Test_BenchMark(t *testing.T) {
 	someComp := OrderBook{}
 	//someComp.IdToPrice = make(map[int]PriceSide)
@@ -356,9 +343,9 @@ func Test_BenchMark(t *testing.T) {
 	}
 	CreateOrderBook(someComp)
 }
+*/
 func Benchmark_OrderWriting(b *testing.B) {
 	someComp := OrderBook{}
-	//someComp.IdToPrice = make(map[int]PriceSide)
 
 	i := 0
 	for n := 0; n < b.N; n++ {

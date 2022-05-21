@@ -1,6 +1,7 @@
 package book
 
 import (
+	"errors"
 	"math"
 
 	"github.com/keshavchand/orderbook/cti"
@@ -39,6 +40,10 @@ type OrderBook struct {
 	M          map[int]PriceSide // Mapping from order id to its price
 }
 
+var (
+	ErrOrderNotFound = errors.New("Order Not Found")
+)
+
 func (book *OrderBook) bestBuy() float32 {
 	if book.BuyOrders == nil {
 		return math.SmallestNonzeroFloat32
@@ -64,7 +69,7 @@ func (book *OrderBook) insertBuy(order Order) []cti.TradedOrder {
 	var traded []cti.TradedOrder
 	if book.SellOrders == nil {
 		if order.Type == MARKET {
-			return traded // TODO: Some sort of error ??
+			return traded
 		}
 		if book.BuyOrders == nil {
 			level := newLevel(order)
@@ -89,7 +94,7 @@ func (book *OrderBook) insertSell(order Order) []cti.TradedOrder {
 	// IF there are no buy orders
 	if book.BuyOrders == nil { // unlikely
 		if order.Type == MARKET {
-			return traded // TODO: Some sort of error ??
+			return traded
 		}
 		if book.SellOrders == nil {
 			level := newLevel(order)
@@ -110,7 +115,29 @@ func (book *OrderBook) insertSell(order Order) []cti.TradedOrder {
 }
 
 func (book *OrderBook) Insert(order Order) []cti.TradedOrder {
-	if order.Type == LIMIT {
+
+	remaining := order.Size
+	var traded []cti.TradedOrder
+	switch order.Side {
+	case BUY:
+		traded = book.insertBuy(order)
+		// it was a buy order
+		// so we remove the seller
+		for _, t := range traded {
+			remaining -= t.Size
+			delete(book.M, t.From)
+		}
+	case SELL:
+		traded = book.insertSell(order)
+		// it was a sell order
+		// so we remove the buyer
+		for _, t := range traded {
+			remaining -= t.Size
+			delete(book.M, t.To)
+		}
+	}
+
+	if remaining > 0 && order.Type == LIMIT {
 		// MARKET orders will not be stored in the books
 		if book.M == nil {
 			book.M = make(map[int]PriceSide)
@@ -120,14 +147,8 @@ func (book *OrderBook) Insert(order Order) []cti.TradedOrder {
 			order.Side,
 		}
 	}
-	switch order.Side {
-	case BUY:
-		return book.insertBuy(order)
-	case SELL:
-		return book.insertSell(order)
-	}
 
-  return nil
+	return traded
 }
 
 func (book *OrderBook) matchOrderBuy(order Order) ([]cti.TradedOrder, Order) {
@@ -167,4 +188,42 @@ func (book *OrderBook) matchOrderSell(order Order) ([]cti.TradedOrder, Order) {
 		}
 	}
 	return traded, order
+}
+
+func (book *OrderBook) Remove(id int) error {
+	p, present := book.M[id]
+  delete(book.M, id)
+	if !present {
+		return ErrOrderNotFound
+	}
+	switch p.Side {
+	case BUY:
+		book.BuyOrders.remove(p.Price, id)
+	case SELL:
+		book.SellOrders.remove(p.Price, id)
+	}
+
+	return nil
+}
+
+func (book *OrderBook) UpdateSize(id int, s int) error {
+	p, present := book.M[id]
+	if !present {
+		return ErrOrderNotFound
+	}
+
+  var o Order
+	switch p.Side {
+	case BUY:
+    o, present = book.BuyOrders.remove(p.Price, id)
+	case SELL:
+    o, present = book.SellOrders.remove(p.Price, id)
+	}
+  if !present {
+		return ErrOrderNotFound
+  }
+  o.Size = s
+  book.Insert(o)
+
+	return nil
 }
