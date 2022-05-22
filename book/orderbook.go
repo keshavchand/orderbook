@@ -12,14 +12,34 @@ type OrderSide int
 const (
 	BUY OrderSide = iota
 	SELL
+
+  SideCount
 )
+
+func (s OrderSide) Valid() bool {
+  if s < 0 && s >= SideCount {
+    return false
+  }
+
+  return true
+}
 
 type OrderType int
 
 const (
 	LIMIT OrderType = iota
 	MARKET
+
+  TypeCount
 )
+
+func (t OrderType) Valid() bool {
+  if t < 0 && t >= TypeCount {
+    return false
+  }
+
+  return true
+}
 
 type Order struct {
 	Price float32
@@ -190,7 +210,8 @@ func (book *OrderBook) matchOrderSell(order Order) ([]cti.TradedOrder, Order) {
 	return traded, order
 }
 
-func (book *OrderBook) Remove(id int) error {
+func (book *OrderBook) Remove(o Order) error {
+  id := o.Id
 	p, present := book.M[id]
   delete(book.M, id)
 	if !present {
@@ -205,14 +226,13 @@ func (book *OrderBook) Remove(id int) error {
 
 	return nil
 }
-
-func (book *OrderBook) UpdateSize(id int, s int) error {
+func (book *OrderBook) UpdateSize(o Order) error {
+  id, s := o.Id, o.Size
 	p, present := book.M[id]
 	if !present {
 		return ErrOrderNotFound
 	}
 
-  var o Order
 	switch p.Side {
 	case BUY:
     o, present = book.BuyOrders.remove(p.Price, id)

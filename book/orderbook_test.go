@@ -255,7 +255,7 @@ func Test_OrderRemove(t *testing.T) {
 	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 1})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 2})
-	book1.Remove(1)
+	book1.Remove(Order{0, BUY, LIMIT, 0, 1})
 
 	book2 := OrderBook{}
 	book2.Insert(Order{20.0, BUY, LIMIT, 10, 0})
@@ -270,7 +270,7 @@ func Test_OrderRemove_AfterMatching(t *testing.T) {
 	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
 	book1.Insert(Order{10.0, BUY, LIMIT, 10, 1})
 	book1.Insert(Order{5.0, SELL, LIMIT, 10, 2})
-	book1.Remove(0)
+	book1.Remove(Order{0, BUY, LIMIT, 0, 0})
 
 	book2 := OrderBook{}
 	book2.Insert(Order{10.0, BUY, LIMIT, 10, 1})
@@ -284,7 +284,7 @@ func Test_OrderUpdateSize(t *testing.T) {
     book1.Insert(Order{20.0, s, LIMIT, 10, 0})
     book1.Insert(Order{10.0, s, LIMIT, 10, 1})
     book1.Insert(Order{10.0, s, LIMIT, 10, 2})
-    book1.UpdateSize(1, 20)
+    book1.UpdateSize(Order{0, s, LIMIT, 20, 1})
 
     book2 := OrderBook{}
     book2.Insert(Order{20.0, s, LIMIT, 10, 0})
