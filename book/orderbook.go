@@ -210,8 +210,7 @@ func (book *OrderBook) matchOrderSell(order Order) ([]cti.TradedOrder, Order) {
 	return traded, order
 }
 
-func (book *OrderBook) Remove(o Order) error {
-  id := o.Id
+func (book *OrderBook) Remove(id int) error {
 	p, present := book.M[id]
   delete(book.M, id)
 	if !present {
@@ -226,13 +225,13 @@ func (book *OrderBook) Remove(o Order) error {
 
 	return nil
 }
-func (book *OrderBook) UpdateSize(o Order) error {
-  id, s := o.Id, o.Size
+func (book *OrderBook) UpdateSize(id int, size int) error {
 	p, present := book.M[id]
 	if !present {
 		return ErrOrderNotFound
 	}
 
+  var o Order
 	switch p.Side {
 	case BUY:
     o, present = book.BuyOrders.remove(p.Price, id)
@@ -242,7 +241,7 @@ func (book *OrderBook) UpdateSize(o Order) error {
   if !present {
 		return ErrOrderNotFound
   }
-  o.Size = s
+  o.Size = size
   book.Insert(o)
 
 	return nil

@@ -18,7 +18,7 @@ func NewOrders() Orders {
 	return o
 }
 
-func (o *Orders) PropagateUp(l int) {
+func (o *Orders) propagateUp(l int) {
 	parent := func(n int) int {
 		if n <= 1 {
 			return 1
@@ -46,14 +46,14 @@ func (o *Orders) Add(order Order) {
 		o.o[o.items] = order
 		lastWritten = o.items
 	}
-  o.PropagateUp(lastWritten)
+  o.propagateUp(lastWritten)
 }
 
 var (
 	ErrNoOrder = errors.New("no orders at the level")
 )
 
-func (o *Orders) PropagateDown(l int) {
+func (o *Orders) propagateDown(l int) {
 	child := func(parent int) (int, int) {
 		return 2 * parent, 2*parent + 1
 	}
@@ -102,7 +102,7 @@ func (o *Orders) Pop() (Order, error) {
 
 	order = o.o[1]
 	o.o[1] = o.o[o.items]
-  o.PropagateDown(1)
+  o.propagateDown(1)
 	o.items--
 	return order, nil
 }
@@ -124,7 +124,7 @@ func (o *Orders) Remove(id int) (Order, bool) {
       tOrder = order
 			o.o[i].Size = 0
 			o.o[i], o.o[o.items] = o.o[o.items], o.o[i]
-			o.PropagateDown(i)
+			o.propagateDown(i)
 			o.items--
 			return tOrder, true
 		}
