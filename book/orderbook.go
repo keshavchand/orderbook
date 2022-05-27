@@ -13,15 +13,15 @@ const (
 	BUY OrderSide = iota
 	SELL
 
-  SideCount
+	SideCount
 )
 
 func (s OrderSide) Valid() bool {
-  if s < 0 && s >= SideCount {
-    return false
-  }
+	if s < 0 && s >= SideCount {
+		return false
+	}
 
-  return true
+	return true
 }
 
 type OrderType int
@@ -30,15 +30,42 @@ const (
 	LIMIT OrderType = iota
 	MARKET
 
-  TypeCount
+	TypeCount
 )
 
 func (t OrderType) Valid() bool {
-  if t < 0 && t >= TypeCount {
-    return false
+	if t < 0 && t >= TypeCount {
+		return false
+	}
+	return true
+}
+
+const (
+  MaxSenderId = (1 << 16) - 1
+  MaxOrderCount = (1 << (64 - 16)) - 1
+)
+
+var (
+  ErrSenderIdOutOfRange = errors.New("sender id out of range")
+  ErrOrderCountOutOfRange = errors.New("order count out of range")
+)
+
+func CreateOrderId(sender_id, count uint64) (uint64, error) {
+  if sender_id > MaxSenderId {
+    return 0, ErrSenderIdOutOfRange
+  }
+  if sender_id > MaxOrderCount {
+    return 0, ErrOrderCountOutOfRange
   }
 
-  return true
+  return (sender_id << (64 - 16)) | (count), nil
+}
+
+func ParseOrderId(id uint64) (sender_id, count uint64) {
+  sender_id = (id >> (64 - 16)) & MaxSenderId
+  count = ((id) & MaxOrderCount)
+
+  return sender_id, count
 }
 
 type Order struct {
@@ -46,7 +73,7 @@ type Order struct {
 	Side  OrderSide
 	Type  OrderType
 	Size  int
-	Id    int
+	Id    uint64
 }
 
 type PriceSide struct {
@@ -57,7 +84,7 @@ type PriceSide struct {
 type OrderBook struct {
 	BuyOrders  *OrderLevel
 	SellOrders *OrderLevel
-	M          map[int]PriceSide // Mapping from order id to its price
+	M          map[uint64]PriceSide // Mapping from order id to its price
 }
 
 var (
@@ -160,7 +187,7 @@ func (book *OrderBook) Insert(order Order) []cti.TradedOrder {
 	if remaining > 0 && order.Type == LIMIT {
 		// MARKET orders will not be stored in the books
 		if book.M == nil {
-			book.M = make(map[int]PriceSide)
+			book.M = make(map[uint64]PriceSide)
 		}
 		book.M[order.Id] = PriceSide{
 			order.Price,
@@ -210,9 +237,9 @@ func (book *OrderBook) matchOrderSell(order Order) ([]cti.TradedOrder, Order) {
 	return traded, order
 }
 
-func (book *OrderBook) Remove(id int) error {
+func (book *OrderBook) Remove(id uint64) error {
 	p, present := book.M[id]
-  delete(book.M, id)
+	delete(book.M, id)
 	if !present {
 		return ErrOrderNotFound
 	}
@@ -225,24 +252,24 @@ func (book *OrderBook) Remove(id int) error {
 
 	return nil
 }
-func (book *OrderBook) UpdateSize(id int, size int) error {
+func (book *OrderBook) UpdateSize(id uint64, size int) error {
 	p, present := book.M[id]
 	if !present {
 		return ErrOrderNotFound
 	}
 
-  var o Order
+	var o Order
 	switch p.Side {
 	case BUY:
-    o, present = book.BuyOrders.remove(p.Price, id)
+		o, present = book.BuyOrders.remove(p.Price, id)
 	case SELL:
-    o, present = book.SellOrders.remove(p.Price, id)
+		o, present = book.SellOrders.remove(p.Price, id)
 	}
-  if !present {
+	if !present {
 		return ErrOrderNotFound
-  }
-  o.Size = size
-  book.Insert(o)
+	}
+	o.Size = size
+	book.Insert(o)
 
 	return nil
 }

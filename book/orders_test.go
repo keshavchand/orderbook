@@ -7,7 +7,7 @@ import (
 func Test_OrdersInsert(t *testing.T) {
 	orders := NewOrders()
 	for i := 0; i <= 10; i++ {
-		order := Order{10.0, BUY, LIMIT, i, i}
+		order := Order{10.0, BUY, LIMIT, i, uint64(i)}
 		orders.Add(order)
 	}
 	for i := 10; i >= 0; i-- {
@@ -15,7 +15,7 @@ func Test_OrdersInsert(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%v\n", err)
 		}
-		if order.Id != i {
+		if order.Id != uint64(i) {
 			t.Fatalf("Size diff than expection %d vs %d\n", order.Size, i)
 		}
 	}
@@ -59,11 +59,11 @@ func Test_OrdersInsertAfterPop(t *testing.T) {
 func Test_OrdersDelete(t *testing.T) {
 	orders := NewOrders()
 	for i := 1; i <= 10; i++ {
-		order := Order{10.0, BUY, LIMIT, i, i}
+		order := Order{10.0, BUY, LIMIT, i, uint64(i)}
 		orders.Add(order)
 	}
-	for i := 5; i > 0; i-- {
-		orders.Remove(i)
+  for i := 5; i > 0; i-- {
+		orders.Remove(uint64(i))
 	}
 	for i := 10; i >= 6; i-- {
 		if i == 5 {

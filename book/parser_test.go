@@ -32,7 +32,7 @@ func TestNewOrder(t *testing.T) {
 }
 
 func TestRemoveOrder(t *testing.T) {
-  s := "1;10"
+	s := "1;10"
 	po, err := Parse(s)
 	if err != nil {
 		t.Fatal(err)
@@ -42,9 +42,9 @@ func TestRemoveOrder(t *testing.T) {
 		t.Fatalf("returned type not Remove Order")
 	}
 
-  if o_ret.Id != 10 {
-    t.Fatalf("Ids don't match")
-  }
+	if o_ret.Id != 10 {
+		t.Fatalf("Ids don't match")
+	}
 }
 
 func TestUpdateOrder(t *testing.T) {
@@ -80,9 +80,9 @@ func TestUpdateOrder(t *testing.T) {
 }
 
 func BenchmarkParser(b *testing.B) {
-  // run the Fib function b.N times
-  for n := 0; n < b.N; n++ {
-    s := "0;10.0;0;0;10"
-    Parse(s)
-  }
+	// run the Fib function b.N times
+	for n := 0; n < b.N; n++ {
+		s := "0;10.0;0;0;10"
+		Parse(s)
+	}
 }

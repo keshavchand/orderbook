@@ -1,6 +1,8 @@
 package book
 
-import "errors"
+import (
+	"errors"
+)
 
 //TODO: REMOVE CAPITAL LETTERS FROM FUNCTION NAMES
 
@@ -46,7 +48,7 @@ func (o *Orders) Add(order Order) {
 		o.o[o.items] = order
 		lastWritten = o.items
 	}
-  o.propagateUp(lastWritten)
+	o.propagateUp(lastWritten)
 }
 
 var (
@@ -102,7 +104,7 @@ func (o *Orders) Pop() (Order, error) {
 
 	order = o.o[1]
 	o.o[1] = o.o[o.items]
-  o.propagateDown(1)
+	o.propagateDown(1)
 	o.items--
 	return order, nil
 }
@@ -116,12 +118,12 @@ func (o *Orders) Peek() (Order, error) {
 	return order, nil
 }
 
-func (o *Orders) Remove(id int) (Order, bool) {
-  var tOrder Order
+func (o *Orders) Remove(id uint64) (Order, bool) {
+	var tOrder Order
 	for i, order := range o.o[1:] {
 		i := i + 1
 		if order.Id == id {
-      tOrder = order
+			tOrder = order
 			o.o[i].Size = 0
 			o.o[i], o.o[o.items] = o.o[o.items], o.o[i]
 			o.propagateDown(i)

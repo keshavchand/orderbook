@@ -264,7 +264,6 @@ func Test_OrderRemove(t *testing.T) {
 	SameOrderBook(t, book1, book2)
 }
 
-
 func Test_OrderRemove_AfterMatching(t *testing.T) {
 	book1 := OrderBook{}
 	book1.Insert(Order{20.0, BUY, LIMIT, 10, 0})
@@ -279,32 +278,57 @@ func Test_OrderRemove_AfterMatching(t *testing.T) {
 }
 
 func Test_OrderUpdateSize(t *testing.T) {
-  for _, s := range []OrderSide{BUY, SELL}{
-    book1 := OrderBook{}
-    book1.Insert(Order{20.0, s, LIMIT, 10, 0})
-    book1.Insert(Order{10.0, s, LIMIT, 10, 1})
-    book1.Insert(Order{10.0, s, LIMIT, 10, 2})
-    book1.UpdateSize(1, 20)
+	for _, s := range []OrderSide{BUY, SELL} {
+		book1 := OrderBook{}
+		book1.Insert(Order{20.0, s, LIMIT, 10, 0})
+		book1.Insert(Order{10.0, s, LIMIT, 10, 1})
+		book1.Insert(Order{10.0, s, LIMIT, 10, 2})
+		book1.UpdateSize(1, 20)
 
-    book2 := OrderBook{}
-    book2.Insert(Order{20.0, s, LIMIT, 10, 0})
-    book2.Insert(Order{10.0, s, LIMIT, 20, 1})
-    book2.Insert(Order{10.0, s, LIMIT, 10, 2})
+		book2 := OrderBook{}
+		book2.Insert(Order{20.0, s, LIMIT, 10, 0})
+		book2.Insert(Order{10.0, s, LIMIT, 20, 1})
+		book2.Insert(Order{10.0, s, LIMIT, 10, 2})
 
-    SameOrderBook(t, book1, book2)
+		SameOrderBook(t, book1, book2)
+	}
+}
+
+func TestOrderId(t *testing.T) {
+  samples := []struct{
+    s,e uint64
+    shouldErr bool
+  } {
+    {10, 10, false},
+    {MaxSenderId, MaxOrderCount, false},
   }
+	for _, sample := range samples {
+		o, err := CreateOrderId(sample.s, sample.e)
+		if sample.shouldErr && err == nil {
+			t.Errorf("Should've errored s:%d e:%d", sample.s, sample.e)
+			continue
+		}
+		s, e := ParseOrderId(o)
+		if s != sample.s {
+			t.Errorf("s not same %d vs %d", s, sample.s)
+		}
+		if e != sample.e {
+			t.Errorf("e not same %d vs %d", e, sample.e)
+		}
+	}
 }
 
 func FuzzOrderBook(f *testing.F) {
 	someComp := OrderBook{}
 
 	f.Add(float32(10.0), uint(10))
-	var i int32 = 0
+	var i int64 = 0
 	f.Fuzz(func(t *testing.T, price float32, size uint) {
-		someComp.Insert(Order{price, BUY, LIMIT, int(size), int(i)})
-		atomic.AddInt32(&i, 1)
+		someComp.Insert(Order{price, BUY, LIMIT, int(size), uint64(i)})
+		atomic.AddInt64(&i, 1)
 	})
 }
+
 /*
 func Test_BenchMark(t *testing.T) {
 	someComp := OrderBook{}
@@ -345,7 +369,7 @@ func Test_BenchMark(t *testing.T) {
 func Benchmark_OrderWriting(b *testing.B) {
 	someComp := OrderBook{}
 
-	i := 0
+	var i uint64 = 0
 	for n := 0; n < b.N; n++ {
 		someComp.Insert(Order{10.0, BUY, LIMIT, 10, i})
 		i++

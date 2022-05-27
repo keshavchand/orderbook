@@ -1,8 +1,8 @@
 package cti
 
 type TradedOrder struct {
-  To    int
-  From  int
+  To    uint64
+  From  uint64
   Size  int
   Price float32
 }
