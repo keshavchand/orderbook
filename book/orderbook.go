@@ -40,16 +40,6 @@ func (t OrderType) Valid() bool {
 	return true
 }
 
-const (
-  MaxSenderId = (1 << 16) - 1
-  MaxOrderCount = (1 << (64 - 16)) - 1
-)
-
-var (
-  ErrSenderIdOutOfRange = errors.New("sender id out of range")
-  ErrOrderCountOutOfRange = errors.New("order count out of range")
-)
-
 type Order struct {
 	Price float32
 	Side  OrderSide

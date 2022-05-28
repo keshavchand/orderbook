@@ -126,10 +126,10 @@ func parseId(o *Order, s string) error {
 type NewOrder struct {
 	O Order
 }
+func (_ NewOrder) ParsedDoNothing() {}
 
 // Price:float;Side:OrderSide(int);Type:OrderType(int);Size:int
 // NOTE: Caller must assign the id to the order
-func (_ NewOrder) ParsedDoNothing() {}
 func ParseNewOrder(s []string) (NewOrder, error) {
 	var o Order
 	if len(s) < 4 {
