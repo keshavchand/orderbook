@@ -252,6 +252,27 @@ func (book *OrderBook) Remove(id uint64) error {
 
 	return nil
 }
+
+func (book *OrderBook) Update(id uint64, o Order) error {
+	p, present := book.M[id]
+	if !present {
+		return ErrOrderNotFound
+	}
+
+	switch p.Side {
+	case BUY:
+		_, present = book.BuyOrders.remove(p.Price, id)
+	case SELL:
+		_, present = book.SellOrders.remove(p.Price, id)
+	}
+	if !present {
+		return ErrOrderNotFound
+	}
+	book.Insert(o)
+
+	return nil
+}
+
 func (book *OrderBook) UpdateSize(id uint64, size int) error {
 	p, present := book.M[id]
 	if !present {
