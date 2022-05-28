@@ -8,7 +8,7 @@ func TestNewOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	o_ret, success := po.(Order)
+	o_ret, success := po.(NewOrder)
 	if !success {
 		t.Fatalf("returned type not Order")
 	}
@@ -17,17 +17,17 @@ func TestNewOrder(t *testing.T) {
 		10, BUY, LIMIT, 10, 0,
 	}
 
-	if o_ret.Price != o_req.Price {
-		t.Fatalf("Prices do not match %f vs %f", o_ret.Price, o_req.Price)
+	if o_ret.O.Price != o_req.Price {
+		t.Fatalf("Prices do not match %f vs %f", o_ret.O.Price, o_req.Price)
 	}
-	if o_ret.Side != o_req.Side {
-		t.Fatalf("Sides do not match %d vs %d", o_ret.Side, o_req.Side)
+	if o_ret.O.Side != o_req.Side {
+		t.Fatalf("Sides do not match %d vs %d", o_ret.O.Side, o_req.Side)
 	}
-	if o_ret.Type != o_req.Type {
-		t.Fatalf("Types do not match %d vs %d", o_ret.Type, o_req.Type)
+	if o_ret.O.Type != o_req.Type {
+		t.Fatalf("Types do not match %d vs %d", o_ret.O.Type, o_req.Type)
 	}
-	if o_ret.Size != o_req.Size {
-		t.Fatalf("Sizes do not match %d vs %d", o_ret.Size, o_req.Size)
+	if o_ret.O.Size != o_req.Size {
+		t.Fatalf("Sizes do not match %d vs %d", o_ret.O.Size, o_req.Size)
 	}
 }
 
@@ -37,13 +37,12 @@ func TestRemoveOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	o_ret, success := po.(Order)
-	if !success {
-		t.Fatalf("returned type not Remove Order")
+	p, ok := po.(RemoveOrder)
+	if !ok {
+		t.Fatal("return type not uint64")
 	}
-
-	if o_ret.Id != 10 {
-		t.Fatalf("Ids don't match")
+	if p.Id != 10 {
+		t.Fatal("id not parsed correctly")
 	}
 }
 
@@ -53,7 +52,7 @@ func TestUpdateOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	o_ret, success := po.(Order)
+	o_ret, success := po.(UpdateOrder)
 	if !success {
 		t.Fatalf("returned type not Update Order")
 	}
@@ -62,20 +61,20 @@ func TestUpdateOrder(t *testing.T) {
 		10, BUY, LIMIT, 10, 10,
 	}
 
-	if o_ret.Id != o_req.Id {
-		t.Fatalf("Ids do not match %d vs %d", o_ret.Id, o_req.Id)
+	if o_ret.O.Id != o_req.Id {
+		t.Fatalf("Ids do not match %d vs %d", o_ret.O.Id, o_req.Id)
 	}
-	if o_ret.Price != o_req.Price {
-		t.Fatalf("Prices do not match %f vs %f", o_ret.Price, o_req.Price)
+	if o_ret.O.Price != o_req.Price {
+		t.Fatalf("Prices do not match %f vs %f", o_ret.O.Price, o_req.Price)
 	}
-	if o_ret.Side != o_req.Side {
-		t.Fatalf("Sides do not match %d vs %d", o_ret.Side, o_req.Side)
+	if o_ret.O.Side != o_req.Side {
+		t.Fatalf("Sides do not match %d vs %d", o_ret.O.Side, o_req.Side)
 	}
-	if o_ret.Type != o_req.Type {
-		t.Fatalf("Types do not match %d vs %d", o_ret.Type, o_req.Type)
+	if o_ret.O.Type != o_req.Type {
+		t.Fatalf("Types do not match %d vs %d", o_ret.O.Type, o_req.Type)
 	}
-	if o_ret.Size != o_req.Size {
-		t.Fatalf("Sizes do not match %d vs %d", o_ret.Size, o_req.Size)
+	if o_ret.O.Size != o_req.Size {
+		t.Fatalf("Sizes do not match %d vs %d", o_ret.O.Size, o_req.Size)
 	}
 }
 

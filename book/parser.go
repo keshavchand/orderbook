@@ -14,6 +14,8 @@ const (
 	ReqRemoveOrder
 	ReqUpdateOrder
 
+	ReqGetUnits
+
 	ReqTypeCount
 )
 
@@ -25,9 +27,16 @@ func (t RequestType) Valid() bool {
 	return true
 }
 
+type ParsedInfo interface {
+	// This interface is inteded to be returned by the parse function
+	// this function doesn't do anything its only purpose is to resitrict
+	// the struct types returned by the parse function
+	ParsedDoNothing()
+}
+
 // Parser Reqest format
 // ReqType:RequestType(int);<remaining info>
-func Parse(s string) (interface{}, error) {
+func Parse(s string) (ParsedInfo, error) {
 	parts := strings.Split(s, ";")
 	if len(parts) <= 0 {
 		return nil, errors.New("not enough parameters")
@@ -50,6 +59,8 @@ func Parse(s string) (interface{}, error) {
 		return ParseRemoveOrder(parts[1:])
 	case ReqUpdateOrder:
 		return ParseUpdateOrder(parts[1:])
+	case ReqGetUnits:
+		return ParseGetUnits(parts[1:])
 	}
 
 	return nil, errors.New("how tf it reached here?!?!?!")
@@ -112,51 +123,70 @@ func parseId(o *Order, s string) error {
 	return nil
 }
 
+type NewOrder struct {
+	O Order
+}
+
 // Price:float;Side:OrderSide(int);Type:OrderType(int);Size:int
 // NOTE: Caller must assign the id to the order
-func ParseNewOrder(s []string) (Order, error) {
+func (_ NewOrder) ParsedDoNothing() {}
+func ParseNewOrder(s []string) (NewOrder, error) {
 	var o Order
 	if len(s) < 4 {
-		return Order{}, errors.New("parsing order: not enough args")
+		return NewOrder{}, errors.New("parsing order: not enough args")
 	}
 
 	newOrderConds := []RequestParserFunc{parsePrice, parseSide, parseType, parseSize}
 	for idx, c := range newOrderConds {
 		if err := c(&o, s[idx]); err != nil {
-			return Order{}, err
+			return NewOrder{}, err
 		}
 	}
-	return o, nil
+	return NewOrder{o}, nil
 }
+
+type RemoveOrder struct {
+	Id uint64
+}
+
+func (_ RemoveOrder) ParsedDoNothing() {}
 
 // id
-func ParseRemoveOrder(s []string) (Order, error) {
+func ParseRemoveOrder(s []string) (RemoveOrder, error) {
 	var o Order
 	if len(s) < 1 {
-		return Order{}, errors.New("parsing order: not enough args")
+		return RemoveOrder{0}, errors.New("parsing order: not enough args")
 	}
 	if err := parseId(&o, s[0]); err != nil {
-		return Order{}, err
+		return RemoveOrder{0}, err
 	}
-	return o, nil
+	return RemoveOrder{o.Id}, nil
 }
 
+type UpdateOrder struct {
+	O Order
+}
+
+func (_ UpdateOrder) ParsedDoNothing() {}
+
 // id:int;Price:float;Side:OrderSide(int);Type:OrderType(int);Size:int
-func ParseUpdateOrder(s []string) (Order, error) {
+func ParseUpdateOrder(s []string) (UpdateOrder, error) {
 	var o Order
 	if len(s) < 5 {
-		return Order{}, errors.New("parsing order: not enough args")
-	}
-	if err := parseId(&o, s[0]); err != nil {
-		return Order{}, err
+		return UpdateOrder{}, errors.New("parsing order: not enough args")
 	}
 
-	newOrderConds := []RequestParserFunc{parsePrice, parseSide, parseType, parseSize}
+	newOrderConds := []RequestParserFunc{parseId, parsePrice, parseSide, parseType, parseSize}
 	for idx, c := range newOrderConds {
-		if err := c(&o, s[idx+1]); err != nil {
-			return Order{}, err
+		if err := c(&o, s[idx]); err != nil {
+			return UpdateOrder{}, err
 		}
 	}
 
-	return o, nil
+	return UpdateOrder{o}, nil
 }
+
+type GetUnits struct{}
+
+func (_ GetUnits) ParsedDoNothing()              {}
+func ParseGetUnits(s []string) (GetUnits, error) { return GetUnits{}, nil }
